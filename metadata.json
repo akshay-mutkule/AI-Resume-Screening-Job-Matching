@@ -1,0 +1,6 @@
+{
+  "name": "AI Resume Screening & Job Matching",
+  "description": "A full-stack NLP system to parse candidates, extract skills, calculate similarity metrics, predict roles, and rank candidates against job openings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
