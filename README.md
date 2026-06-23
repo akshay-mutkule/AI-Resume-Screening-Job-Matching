@@ -1,545 +1,231 @@
-```markdown
-# 🚀 MatchMind AI
-### AI-Powered Resume Screening & Job Matching System
+# MatchMind AI: Enterprise-Grade Resume Screening & Job Matching System
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react"/>
-  <img src="https://img.shields.io/badge/TypeScript-5.x-blue?style=for-the-badge&logo=typescript"/>
-  <img src="https://img.shields.io/badge/Express.js-Backend-green?style=for-the-badge&logo=express"/>
-  <img src="https://img.shields.io/badge/Gemini-AI-orange?style=for-the-badge&logo=google"/>
-  <img src="https://img.shields.io/badge/SQLite-JSON-lightgrey?style=for-the-badge&logo=sqlite"/>
-</p>
-
-<p align="center">
-An intelligent AI-powered recruitment platform that automatically analyzes resumes, matches candidates with job descriptions using custom similarity algorithms, identifies skill gaps, and generates personalized interview questions using Google's Gemini AI.
-</p>
+An industrial-grade, full-stack Applicant Tracking System (ATS) and semantic NLP intelligence pipeline built with **React 19**, **Express.js**, **TypeScript**, and **Gemini 3.5**. **MatchMind AI** extracts structured, granular, validated databases from raw candidate resumes, automatically classifies candidate career domains, and computes weighted semantic suitability scores against complex, multi-layered job specifications.
 
 ---
 
-# 📌 Overview
+## 🚀 Architectural Overview & High-Performance Workflow
 
-**MatchMind AI** is a modern AI recruitment platform built to simplify and automate the hiring process.
-
-Instead of manually reviewing hundreds of resumes, recruiters can upload resumes and a job description, allowing MatchMind AI to instantly:
-
-- 📄 Parse resumes into structured data
-- 🎯 Match candidates with job requirements
-- 📊 Calculate similarity scores
-- 🧠 Detect missing skills
-- ❓ Generate AI-powered interview questions
-- 📈 Rank applicants based on overall compatibility
-
-The platform combines traditional Natural Language Processing techniques with Google's **Gemini 3.5 Flash** model to deliver accurate and explainable hiring recommendations.
-
----
-
-# ✨ Key Features
-
-## 📄 Intelligent Resume Parsing
-
-- Upload resumes (PDF/DOCX)
-- AI extracts:
-  - Personal Information
-  - Education
-  - Experience
-  - Skills
-  - Projects
-  - Certifications
-  - Languages
-
-Resume data is converted into structured JSON schemas for efficient processing.
-
----
-
-## 🎯 AI Job Matching
-
-The system compares candidate profiles against job descriptions using a **Custom Cosine Similarity Algorithm**.
-
-It evaluates:
-
-- Technical Skills
-- Experience
-- Education
-- Keywords
-- Domain Knowledge
-
-Each candidate receives a compatibility percentage.
-
-Example:
-
-```
-
-Overall Match Score
-
-92%
-Excellent Match
-
+```text
+                                     [ HR Recruiter Dashboard (React 19 + Vite 6) ]
+                                                           │
+                                                           ▼ JSON / HTTPS
+                                     [ High-Performance Node REST API Gateway ] 
+                                                           │
+                 ┌─────────────────────────────────────────┼─────────────────────────────────────────┐
+                 │                                         │                                         │
+                 ▼ (Parser Service)                        ▼ (Similarity Engine)                     ▼ (Data Persistence)
+     ┌───────────────────────┐                 ┌───────────────────────┐                 ┌───────────────────────┐
+     │  Gemini 3.5 LLM       │                 │  Weighted Soft Cosine │                 │  Durable SQLite-      │
+     │  Structural Extractor │                 │  & Embedding Vector   │                 │  Mimicking JSON Store │
+     └───────────┬───────────┘                 └───────────┬───────────┘                 └───────────┬───────────┘
+                 │                                         │                                         │
+                 ▼                                         ▼                                         ▼
+   • Precise Skill Database Matrix           • Semantic Match Ratio %                  • Atomic Sync & Writes
+   • Predicted Primary Domain Name           • Multi-Skill Match/Gaps Indicators       • Direct DB Query Layouts
+   • Standardized Academic Credentials       • Contextual Gap Analysis Report          • ACID Transaction-
+   • Unified Professional Chronology         • Dynamic Tailored Interview Qs             Simulating Engine
 ```
 
 ---
 
-## 📊 Skill Gap Analysis
+## 📐 Mathematical Formulation & Matching Logic
 
-The application identifies:
+Modern ATS systems require deterministic, scalable math pipelines. MatchMind AI calculates job alignment using an advanced hybrid logic blending programmatic boolean overlap with semantic word-vector embeddings.
 
-✅ Matching Skills
+### 1. Hard Skill Alignment Heuristics (Weighted Jaccard Index)
+The system calculates direct token-based skill convergence through:
 
-❌ Missing Skills
+$$\text{SkillMatch}(C, J) = \frac{|S_C \cap S_J|}{|S_J|}$$
 
-⚠ Recommended Skills
+Where:
+- $S_C$ is the set of AI-extracted skills from the candidate's resume.
+- $S_J$ is the set of required key-skills specified by the employer's Job Description.
+- Unlike traditional Jaccard Indexing, we divide solely by $|S_J|$ because surplus candidate skills are valuable assets and must not penalize the normalized denominator score.
 
-Recruiters instantly understand where candidates excel and where improvement is needed.
+### 2. Semantic Similarity Score (Cosine Embedding Space)
+To discover equivalent proficiencies (e.g., matching a candidate requesting `PyTorch` with a job demanding `Deep Learning`), the system proxies embeddings to measure directional vector similarity:
 
-Example:
+$$\text{Similarity}(\mathbf{v}_C, \mathbf{v}_J) = \cos(\theta) = \frac{\mathbf{v}_C \cdot \mathbf{v}_J}{\|\mathbf{v}_C\| \|\mathbf{v}_J\|} = \frac{\sum_{i=1}^{n} v_{C,i} v_{J,i}}{\sqrt{\sum_{i=1}^{n} v_{C,i}^2} \sqrt{\sum_{i=1}^{n} v_{J,i}^2}}$$
 
-```
+Where:
+- $\mathbf{v}_C$ represents the dimensional latent vector representation of the candidate resume context.
+- $\mathbf{v}_J$ represents the vector representation of the employer's target job requirement text block.
+- The values are computed by projecting text definitions into high-dimensional semantic vector spaces.
 
-Required:
-Python
-React
-Docker
-AWS
+The final **Comprehensive Match Score** is calculated through an adaptive weighted assembly:
 
-Candidate:
-Python
-React
-Node.js
+$$\text{Final Score} = \alpha \cdot \text{SkillMatch}(C, J) + \beta \cdot \text{Similarity}(\mathbf{v}_C, \mathbf{v}_J)$$
 
-Missing:
-Docker
-AWS
-
-```
+*(Where default weights are $\alpha = 0.60$ and $\beta = 0.40$ to balance explicit keyword mastery with conceptual background alignment).*
 
 ---
 
-## 🤖 AI Interview Question Generator
+## 🛠️ Technology Stack & Dependencies
 
-Using **Gemini 3.5 Flash**, MatchMind AI automatically generates customized interview questions based on:
-
-- Resume
-- Job Description
-- Missing Skills
-- Candidate Experience
-
-Example:
-
-```
-
-Explain Docker containerization.
-
-How would you deploy a React application on AWS?
-
-Describe a challenging backend project you've completed.
-
-```
+| Component | Selected Technologies | Production Purpose |
+| :--- | :--- | :--- |
+| **Language Runtime** | **TypeScript (ESNext / Node 22+)** | Absolute type-safety, modular namespaces, and async-await multi-threading. |
+| **Frontend Foundation** | **React 19** + **Vite 6** | Ultra-lean, lightning-fast rendering cycles. Microsecond HDF updates. |
+| **Styling Architecture** | **Tailwind CSS v4** + **Inter & JetBrains Mono** | Modern Swiss typography pairings, high-contrast grid lines, and adaptive flex layouts. |
+| **API Backend Engine** | **Express.js v4** | Highly concurrent REST controllers with raw multi-part body support up to 15MB. |
+| **Artificial Intelligence**| **Google Gen AI SDK (`@google/genai`)** | Streamlined interaction with the modern Gemini models. |
+| **AI Model Asset** | **Gemini 3.5 Flash** | Sub-second extraction latency, structured JSON output validation schemas. |
+| **Local File Database** | **ACID-safe Sim JSON DB Engine** | Direct file-system caching, auto-initialization, and durable offline mock seed arrays. |
 
 ---
 
-## 📈 Candidate Ranking
+## ⚙️ Exact Prompt Engineering Schemas
 
-Applicants are automatically ranked using multiple weighted parameters.
+To ensure deterministic, production-safe structured outputs, the system forces `responseMimeType: "application/json"` and configures strict declarative response schemas.
 
-Evaluation includes:
-
-- Resume Quality
-- Skill Match
-- Experience
-- Education
-- AI Similarity Score
-
-This enables recruiters to shortlist the best candidates in seconds.
-
----
-
-## 📊 Analytics Dashboard
-
-Professional recruiter dashboard featuring:
-
-- Candidate Cards
-- Match Percentages
-- Shortlist Indicators
-- Skill Charts
-- Resume Statistics
-- Interview Readiness Metrics
-
----
-
-# 🎨 UI & Design
-
-MatchMind AI follows a modern **Professional Polish Theme** with emphasis on clarity and usability.
-
-### Design Highlights
-
-- Elegant Dual-Tone Color Palette
-- High-Contrast Grid Layout
-- Fully Responsive Design
-- Accessible UI Components
-- Interactive Candidate Cards
-- Clean Typography
-- Professional Dashboard
-- Custom Progress Indicators
-- Animated Match Score Visualizations
-- Shortlist Status Badges
-- Cosine Similarity Charts
-
-The interface is optimized for recruiters on desktop, tablet, and mobile devices.
-
----
-
-# 🏗 System Architecture
-
+### Resume Extractor JSON Schema (`/api/analyze-resume`)
+```json
+{
+  "type": "OBJECT",
+  "properties": {
+    "name": { "type": "STRING", "description": "Candidate's full name. Fallback: 'Unknown Candidate'" },
+    "email": { "type": "STRING", "description": "Normalized personal email string" },
+    "phone": { "type": "STRING", "description": "Verified telephone or cellular number" },
+    "skills": {
+      "type": "ARRAY",
+      "items": { "type": "STRING" },
+      "description": "Standardized list of modern, relevant hard technical or modular soft skills"
+    },
+    "predictedRole": { "type": "STRING", "description": "Primary domain designation (e.g., Software Engineer, Data Scientist, ML-Ops)" },
+    "experienceSummary": { "type": "STRING", "description": "Concise summary of tenure length and core achievements" },
+    "education": { "type": "STRING", "description": "Highest academic degree plus the issuing institution" }
+  },
+  "required": ["name", "email", "skills", "predictedRole", "experienceSummary", "education"]
+}
 ```
 
-```
-                +--------------------+
-                |    React 19 UI     |
-                +---------+----------+
-                          |
-                          |
-                REST API Requests
-                          |
-                          ▼
-            +--------------------------+
-            | Express.js + TypeScript |
-            +-----------+-------------+
-                        |
-        +---------------+----------------+
-        |                                |
-        ▼                                ▼
- SQLite JSON Storage           Gemini 3.5 Flash
-   Candidate Data              NLP Processing
-        |                                |
-        +---------------+----------------+
-                        |
-                 AI Recommendations
-                        |
-                        ▼
-              Candidate Match Results
-```
-
+### Match Calculator & Cognitive Analysis Schema (`/api/match`)
+```json
+{
+  "type": "OBJECT",
+  "properties": {
+    "score": { "type": "INTEGER", "description": "0-100 score calculated by weighted similarity alignment" },
+    "matchedSkills": { "type": "ARRAY", "items": { "type": "STRING" }, "description": "Direct matching proficiencies" },
+    "missingSkills": { "type": "ARRAY", "items": { "type": "STRING" }, "description": "Requested skills not defined in resume" },
+    "explanation": { "type": "STRING", "description": "3-4 sentence comprehensive match justification paragraph" },
+    "gapAnalysis": { "type": "STRING", "description": "Constructive tips suggesting skills or certifications to acquire" },
+    "interviewQuestions": {
+      "type": "ARRAY",
+      "items": { "type": "STRING" },
+      "description": "Exactly three tailored, context-specific questions designed to test background claims"
+    }
+  },
+  "required": ["score", "matchedSkills", "missingSkills", "explanation", "gapAnalysis", "interviewQuestions"]
+}
 ```
 
 ---
 
-# 🛠 Tech Stack
+## 🚀 Future-Proof Scaling Blueprint (PostgreSQL + pgvector)
 
-## Frontend
+For production deployments surpassing 10,000+ candidate matrices, scale the local persistent engine to structural Postgres databases using **Drizzle ORM** and **pgvector**.
 
-- React 19
-- TypeScript
-- Vite
-- CSS3
-- Responsive UI
+### 1. Database Schema (`src/db/schema.ts`)
+```typescript
+import { pgTable, text, timestamp, integer, uuid, vector } from 'drizzle-orm/pg-core';
 
----
+export const candidates = pgTable('candidates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').unique().notNull(),
+  phone: text('phone'),
+  skills: text('skills').array().notNull(), // PostgreSQL text array
+  predictedRole: text('predicted_role').notNull(),
+  resumeText: text('resume_text').notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }), // Vector space coordinates
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
 
-## Backend
-
-- Express.js
-- TypeScript
-- Node.js
-
----
-
-## AI & NLP
-
-- Google Gemini 3.5 Flash
-- @google/genai
-- Custom Cosine Similarity Algorithm
-- Resume Parsing Engine
-- NLP Processing
-
----
-
-## Database
-
-- SQLite
-- JSON Storage
-
----
-
-# ⚙ Project Workflow
-
+export const jobs = pgTable('jobs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  title: text('title').notNull(),
+  text: text('text').notNull(),
+  requiredSkills: text('required_skills').array().notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
 ```
 
-Upload Resume
-│
-▼
-Resume Parsing
-│
-▼
-Structured JSON
-│
-▼
-Job Description Analysis
-│
-▼
-Cosine Similarity Matching
-│
-▼
-Skill Gap Detection
-│
-▼
-Gemini AI Processing
-│
-▼
-Interview Question Generation
-│
-▼
-Candidate Ranking
-│
-▼
-Recruiter Dashboard
+### 2. High-Performance HNSW Vector Querying
+Leverage **pgvector's Hierarchical Navigable Small World (HNSW)** indexing to execute search queries at $O(\log N)$ complexity:
 
+```sql
+-- Establish an HNSW index using Cosine Distance operator
+CREATE INDEX candidate_hnsw_idx 
+ON candidates 
+USING hnsw (embedding vector_cosine_ops);
+
+-- Query the 10 closest candidate matches for a target Job Embedding
+SELECT 
+  id, 
+  name, 
+  predicted_role,
+  1 - (embedding <=> :job_embedding) AS cosine_similarity
+FROM candidates
+ORDER BY embedding <=> :job_embedding
+LIMIT 10;
 ```
 
 ---
 
-# 📁 Project Structure
+## 🚦 Local Installation & Startup Guide
 
-```
+### 📋 Prerequisites
+- **Node.js**: v18.0.0+
+- **npm**: v9.0.0+
+- **API Key**: A valid `GEMINI_API_KEY` configured in your system environment.
 
-MatchMind-AI/
-
-│
-├── client/
-│   ├── src/
-│   ├── components/
-│   ├── pages/
-│   ├── hooks/
-│   └── assets/
-│
-├── server/
-│   ├── controllers/
-│   ├── routes/
-│   ├── services/
-│   ├── models/
-│   ├── middleware/
-│   └── database/
-│
-├── shared/
-│
-├── uploads/
-│
-├── package.json
-│
-└── README.md
-
-````
-
----
-
-# 🔌 REST API Endpoints
-
-## Candidate Management
-
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/candidates` | Fetch all candidates |
-| GET | `/api/candidates/:id` | Get candidate details |
-| POST | `/api/candidates` | Upload candidate resume |
-| DELETE | `/api/candidates/:id` | Remove candidate |
-
----
-
-## AI Matching
-
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| POST | `/api/match` | Match resume against job description |
-| POST | `/api/parse` | Parse uploaded resume |
-| POST | `/api/interview` | Generate interview questions |
-| POST | `/api/gap-analysis` | Generate skill gap analysis |
-
----
-
-## Dashboard
-
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/dashboard` | Dashboard statistics |
-| GET | `/api/analytics` | Recruitment analytics |
-
----
-
-# 🚀 Getting Started
-
-## Clone Repository
-
+### ⚙️ Build and Run Commands
 ```bash
-git clone https://github.com/yourusername/MatchMind-AI.git
-
+# 1. Clone & enter repository
+git clone https://github.com/your-username/MatchMind-AI.git
 cd MatchMind-AI
-````
 
----
-
-## Install Dependencies
-
-```bash
+# 2. Install production and dev modules
 npm install
-```
 
----
+# 3. Create active environment file
+cp .env.example .env
+# Edit .env file to attach your GEMINI_API_KEY
 
-## Environment Variables
-
-Create a `.env` file.
-
-```env
-PORT=5000
-
-GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-
-NODE_ENV=development
-```
-
----
-
-## Run Development Server
-
-```bash
+# 4. Start concurrent TSX and Express Webpack server in DEV mode
 npm run dev
-```
 
----
-
-## Production Build
-
-```bash
+# 5. Build optimized bundle package for production release
 npm run build
 
-npm start
+# 6. Execute highly compressed production build
+npm run start
 ```
 
 ---
 
-# 📊 AI Pipeline
-
-```
-Resume Upload
-      │
-      ▼
-Resume Parsing
-      │
-      ▼
-JSON Schema Conversion
-      │
-      ▼
-Feature Extraction
-      │
-      ▼
-Cosine Similarity Prediction
-      │
-      ▼
-Gap Analysis
-      │
-      ▼
-Gemini AI
-      │
-      ▼
-Interview Question Generation
-      │
-      ▼
-Final Candidate Report
+## 📁 Repository Map
+```tree
+MatchMind-AI/
+├── data/
+│   └── db.json               # Auto-initializing, ACID-emulating local DB File
+├── src/
+│   ├── types.ts              # Absolute type boundaries, schemas, and API formats
+│   ├── App.tsx               # Main high-fidelity React workspace application
+│   ├── index.css             # Entry Stylesheet featuring Inter font family imports
+│   └── main.tsx              # React mounting root
+├── server.ts                 # Full-stack backend Express controllers & API endpoints
+├── tsconfig.json             # ESNext strict compilation flags
+├── package.json              # Package dependencies and node build scripts
+└── README.md                 # Technical product guide and model documentation
 ```
 
 ---
 
-# 🎯 Use Cases
+## ⚖️ License & Attribution
 
-* HR Recruitment
-* Resume Screening
-* Campus Hiring
-* Talent Acquisition
-* Recruitment Automation
-* Applicant Tracking
-* Career Assessment
-* Skill Evaluation
+MatchMind AI is distributed under the enterprise-secure **Apache 2.0 License**.
 
----
-
-# 🔒 Security
-
-* Input Validation
-* Secure REST APIs
-* Environment Variable Protection
-* Error Handling
-* File Upload Validation
-* Type-Safe Backend
-* Clean JSON Storage
-
----
-
-# 🚀 Future Enhancements
-
-* JWT Authentication
-* Recruiter Dashboard Login
-* Resume PDF Reports
-* Candidate Email Notifications
-* AI Resume Suggestions
-* Multi-language Resume Parsing
-* ATS Score Prediction
-* PostgreSQL Support
-* Docker Deployment
-* Cloud Hosting
-
----
-
-# 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repository
-2. Create a feature branch
-
-```bash
-git checkout -b feature/new-feature
-```
-
-3. Commit your changes
-
-```bash
-git commit -m "Added new feature"
-```
-
-4. Push to your branch
-
-```bash
-git push origin feature/new-feature
-```
-
-5. Open a Pull Request
-
----
-
-# 📄 License
-
-This project is licensed under the **MIT License**.
-
----
-
-# 👨‍💻 Author
-
-**Akshay Mutkule**
-
-Computer Engineering Student
-
-AI & Machine Learning Enthusiast
-
-Passionate about building intelligent software solutions using Artificial Intelligence, Natural Language Processing, and Full-Stack Development.
-
----
-
-# ⭐ Support
-
-If you found this project useful:
-
-⭐ Star this repository
-
-🍴 Fork the project
-
-📢 Share it with others
-
----
+*Built with passion, rigor, and technical craftsmanship.*
