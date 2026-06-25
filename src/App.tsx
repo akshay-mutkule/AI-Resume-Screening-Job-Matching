@@ -37,9 +37,13 @@ export default function App() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   
   // Navigation & UI state
-  const [activeTab, setActiveTab] = useState<"matches" | "jobs" | "talent">("matches");
+  const [activeTab, setActiveTab] = useState<"home" | "matches" | "jobs" | "talent">("home");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedJobFilter, setSelectedJobFilter] = useState<string>("all");
+  
+  // Home Sandbox Simulator State
+  const [sandboxCandidateSkills, setSandboxCandidateSkills] = useState<string[]>(["Python", "Docker", "SQL", "Git", "React"]);
+  const [sandboxJobSkills, setSandboxJobSkills] = useState<string[]>(["Python", "SQL", "FastAPI", "Docker", "AWS"]);
   
   // Loading states
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -330,8 +334,24 @@ export default function App() {
 
   const filteredCandidatesList = filterCandidates();
 
+  // Sandbox calculations
+  const sandboxIntersection = sandboxCandidateSkills.filter(s => sandboxJobSkills.includes(s));
+  const sandboxMissing = sandboxJobSkills.filter(s => !sandboxCandidateSkills.includes(s));
+  const sandboxJaccardScore = sandboxJobSkills.length > 0 ? (sandboxIntersection.length / sandboxJobSkills.length) * 100 : 0;
+  const sandboxSemanticProxy = (() => {
+    let bonus = 0;
+    if (sandboxCandidateSkills.includes("React") && sandboxJobSkills.includes("TypeScript")) bonus += 15;
+    if (sandboxCandidateSkills.includes("Git") && sandboxJobSkills.includes("Docker")) bonus += 10;
+    if (sandboxCandidateSkills.includes("Docker") && sandboxJobSkills.includes("AWS")) bonus += 20;
+    if (sandboxCandidateSkills.includes("Python") && sandboxJobSkills.includes("FastAPI")) bonus += 15;
+    if (sandboxCandidateSkills.includes("PyTorch") && sandboxJobSkills.includes("Kubernetes")) bonus += 15;
+    if (sandboxCandidateSkills.includes("SQL") && sandboxJobSkills.includes("NoSQL")) bonus += 10;
+    return Math.min(100, 45 + bonus);
+  })();
+  const sandboxWeightedScore = Math.round(0.6 * sandboxJaccardScore + 0.4 * sandboxSemanticProxy);
+
   return (
-    <div className="flex flex-col h-screen min-h-[768px] min-w-[1024px] bg-[#F8FAFC] text-[#1E293B] font-sans overflow-hidden" id="match-mind-root">
+    <div className="flex flex-col min-h-screen lg:h-screen w-full bg-[#F8FAFC] text-[#1E293B] font-sans overflow-y-auto lg:overflow-hidden" id="match-mind-root">
       
       {/* Dynamic Status / Interactive Toast Notifications */}
       {notification && (
@@ -354,39 +374,104 @@ export default function App() {
       )}
 
       {/* Header */}
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0" id="matchmind-header">
+      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 shrink-0" id="matchmind-header">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
+          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shrink-0">
             <div className="w-4 h-4 border-2 border-white rounded-sm rotate-45"></div>
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-none">MatchMind <span className="text-blue-600">AI</span></h1>
-            <p className="text-[10px] text-slate-400 font-medium tracking-wide mt-0.5">RESUME SCREENING & JOB MATCHING</p>
+            <h1 className="text-sm sm:text-lg font-bold tracking-tight text-slate-900 leading-none">MatchMind <span className="text-blue-600">AI</span></h1>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium tracking-wide mt-0.5 uppercase">RESUME SCREENING & JOB MATCHING</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-[11px] font-medium text-slate-600 border border-slate-200">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-[11px] font-medium text-slate-600 border border-slate-200">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             Gemini NLP Model Enabled
           </div>
           <button 
             id="open-upload-btn"
             onClick={() => setShowAddResume(true)}
-            className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-md hover:bg-blue-700 shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white text-xs font-semibold rounded-md hover:bg-blue-700 shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" /> Upload Resume
+            <Plus className="w-3.5 h-3.5" /> <span className="hidden xs:inline sm:inline">Upload Resume</span><span className="inline xs:hidden sm:hidden">Upload</span>
           </button>
-          <div className="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 font-bold text-xs" title="Human Resources Administrator">
+          <div className="w-7 h-7 sm:w-8 sm:w-8 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 font-bold text-xs" title="Human Resources Administrator">
             HR
           </div>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* Mobile Tab Strip (Only visible on screens < lg) */}
+      <div className="flex lg:hidden bg-white border-b border-slate-200 p-2 gap-1 overflow-x-auto shrink-0" id="mobile-tab-strip">
+        <button 
+          id="mobile-tab-btn-home"
+          onClick={() => setActiveTab("home")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === "home" 
+              ? "bg-blue-50 text-blue-700 font-extrabold" 
+              : "text-slate-600 hover:bg-slate-50 font-semibold"
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+          Home
+        </button>
+        <button 
+          id="mobile-tab-btn-matches"
+          onClick={() => setActiveTab("matches")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === "matches" 
+              ? "bg-blue-50 text-blue-700" 
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <Cpu className="w-3.5 h-3.5 text-blue-500" />
+          Matches
+        </button>
+        <button 
+          id="mobile-tab-btn-jobs"
+          onClick={() => setActiveTab("jobs")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === "jobs" 
+              ? "bg-blue-50 text-blue-700" 
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <Briefcase className="w-3.5 h-3.5 text-blue-500" />
+          Jobs ({jobs.length})
+        </button>
+        <button 
+          id="mobile-tab-btn-talent"
+          onClick={() => setActiveTab("talent")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === "talent" 
+              ? "bg-blue-50 text-blue-700" 
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <Users className="w-3.5 h-3.5 text-blue-500" />
+          Talent ({candidates.length})
+        </button>
+      </div>
+
+      <div className="flex flex-col lg:flex-row flex-1 lg:overflow-hidden">
         
-        {/* Sidebar Navigation */}
-        <aside className="w-56 border-r border-slate-200 bg-white p-4 flex flex-col gap-1.5 shrink-0" id="app-sidebar">
+        {/* Sidebar Navigation (Only visible on lg screens and up) */}
+        <aside className="hidden lg:flex lg:flex-col lg:w-56 border-r border-slate-200 bg-white p-4 gap-1.5 shrink-0" id="app-sidebar">
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Recruitment Workspace</div>
+          
+          <button 
+            id="tab-btn-home"
+            onClick={() => setActiveTab("home")}
+            className={`flex items-center gap-3 px-3 py-2 rounded-md font-semibold text-xs text-left cursor-pointer transition-all ${
+              activeTab === "home" 
+                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-bold" 
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-blue-500" />
+            Platform Overview (Home)
+          </button>
           
           <button 
             id="tab-btn-matches"
@@ -466,48 +551,391 @@ export default function App() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto" id="main-content-scrollable">
+        <main className="flex-1 p-4 sm:p-6 flex flex-col gap-4 sm:gap-6 overflow-y-auto" id="main-content-scrollable">
           
           {/* Top Stats Cards */}
-          <section className="grid grid-cols-4 gap-4 shrink-0" id="statistics-cards">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Target Position</div>
-              <div className="text-lg font-bold text-slate-900 truncate">
-                {selectedJob ? selectedJob.title : "No Active Postings"}
+          {activeTab !== "home" && (
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0" id="statistics-cards">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[100px]">
+                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Target Position</div>
+                <div className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 truncate">
+                  {selectedJob ? selectedJob.title : "No Active Postings"}
+                </div>
+                <div className="text-blue-600 text-[9px] mt-1 font-semibold uppercase tracking-wider">
+                  {selectedJob ? `${selectedJob.requiredSkills.length} Required Skills` : "Define postings"}
+                </div>
               </div>
-              <div className="text-blue-600 text-[9px] mt-1 font-semibold uppercase tracking-wider">
-                {selectedJob ? `${selectedJob.requiredSkills.length} Required Skills` : "Define postings"}
-              </div>
-            </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Candidate Submissions</div>
-              <div className="text-2xl font-black text-slate-900">{candidates.length}</div>
-              <div className="text-green-600 text-[9px] mt-1 font-semibold flex items-center gap-1">
-                <TrendingUp className="w-2.5 h-2.5" />
-                Durable SQLite Persistent State
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[100px]">
+                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Candidate Submissions</div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900">{candidates.length}</div>
+                <div className="text-green-600 text-[9px] mt-1 font-semibold flex items-center gap-1">
+                  <TrendingUp className="w-2.5 h-2.5 animate-pulse" />
+                  Durable SQLite Persistent State
+                </div>
               </div>
-            </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Avg Similarity Score</div>
-              <div className="text-2xl font-black text-slate-900">{averageMatchScore}</div>
-              <div className="text-slate-500 text-[9px] mt-1 font-semibold">
-                Cosine Distance / Semantic Indexing
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[100px]">
+                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Avg Similarity Score</div>
+                <div className="text-xl sm:text-2xl font-black text-slate-900">{averageMatchScore}</div>
+                <div className="text-slate-500 text-[9px] mt-1 font-semibold">
+                  Cosine Distance / Semantic Indexing
+                </div>
               </div>
-            </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Shortlisted Prospects</div>
-              <div className="text-2xl font-black text-amber-600">{shortlistedCount}</div>
-              <div className="text-slate-500 text-[9px] mt-1 font-medium">Ready for immediate interview</div>
-            </div>
-          </section>
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[100px]">
+                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Shortlisted Prospects</div>
+                <div className="text-xl sm:text-2xl font-black text-amber-600">{shortlistedCount}</div>
+                <div className="text-slate-500 text-[9px] mt-1 font-medium">Ready for immediate interview</div>
+              </div>
+            </section>
+          )}
 
           {/* MAIN SCREEN DEPENDENT ON TABS */}
 
+          {/* MAIN SCREEN DEPENDENT ON TABS */}
+
+          {activeTab === "home" && (
+            <div className="flex-1 flex flex-col gap-8 animate-fadeIn" id="matchmind-home-page">
+              
+              {/* Hero Section */}
+              <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden border border-slate-800" id="home-hero">
+                {/* Decorative absolute elements */}
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl"></div>
+                
+                <div className="relative z-10 max-w-3xl">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-bold tracking-wider uppercase mb-4 border border-blue-500/20">
+                    <Sparkles className="w-3.5 h-3.5" /> Next-Generation ATS Intelligence
+                  </span>
+                  <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight mb-3">
+                    Streamline Recruitment with Semantic Match Analytics
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 font-medium">
+                    Analyze, parse, and score unstructured resumes against your custom job openings with sub-second precision. Powered by Google Gemini AI, MatchMind provides unified skill-gap analysis, academic mapping, and intelligent custom phone-screen interview questions.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    <button 
+                      onClick={() => setActiveTab("matches")}
+                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-md hover:shadow-blue-500/20 flex items-center gap-2 cursor-pointer"
+                    >
+                      Launch Workspace <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setShowAddResume(true)}
+                      className="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs font-bold rounded-lg transition-all border border-white/10 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4 text-blue-400" /> Upload Local Resume
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab("jobs")}
+                      className="px-5 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-200 text-xs font-bold rounded-lg transition-all border border-indigo-500/20 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Briefcase className="w-4 h-4 text-indigo-400" /> Configure Job Specs
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Who Can Use This System Section */}
+              <div id="home-who-use-section">
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-1">Who can use this project?</h2>
+                <p className="text-xs text-slate-500 mb-4">Leverage instant semantic alignment data across various professional use cases.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
+                        <Users className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Recruiters & HR Leads</h3>
+                      <p className="text-[11px] leading-relaxed text-slate-500 mt-2">
+                        Standardize high volumes of raw applicant profiles. Quickly map candidate credentials to specific technical domains and isolate top-tier profiles.
+                      </p>
+                    </div>
+                    <div className="text-[10px] text-blue-600 font-bold mt-4">Automate screening process →</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center mb-3">
+                        <Cpu className="w-4 h-4 text-indigo-600" />
+                      </div>
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Hiring Managers</h3>
+                      <p className="text-[11px] leading-relaxed text-slate-500 mt-2">
+                        Assess multidimensional skill alignment models instantly. Identify core missing software stacks or required frameworks before spending time on live interviews.
+                      </p>
+                    </div>
+                    <div className="text-[10px] text-indigo-600 font-bold mt-4">Save engineering time →</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
+                        <Award className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Talent Operations</h3>
+                      <p className="text-[11px] leading-relaxed text-slate-500 mt-2">
+                        Maintain persistent audit trails of matching scores, interview questions, and shortlist statuses under standard sandbox database registries.
+                      </p>
+                    </div>
+                    <div className="text-[10px] text-amber-600 font-bold mt-4">Standardize compliance →</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mb-3">
+                        <GraduationCap className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Candidates & Agencies</h3>
+                      <p className="text-[11px] leading-relaxed text-slate-500 mt-2">
+                        Test and calibrate resumes against production description tokens. Learn where your portfolio might be filtered out and optimize formatting.
+                      </p>
+                    </div>
+                    <div className="text-[10px] text-emerald-600 font-bold mt-4">Optimize suitability scores →</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* LIVE INTERACTIVE SIMULATOR (FEATURE SHOWCASE) */}
+              <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-sm" id="interactive-features-showcase">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+                  <div>
+                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded">Interactive Sandbox Feature</span>
+                    <h2 className="text-base font-bold text-slate-900 mt-1">Live Skill-Match Cosine & Jaccard Simulator</h2>
+                    <p className="text-xs text-slate-500">Add or remove skills to see how our math algorithms calculate suitability percentages in real time.</p>
+                  </div>
+                  
+                  {/* Score circle */}
+                  <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-400 font-bold uppercase">Weighted Score</div>
+                      <div className="text-base font-black text-slate-800">{sandboxWeightedScore}%</div>
+                    </div>
+                    <div className="w-10 h-10 flex-shrink-0 relative">
+                      <svg className="w-10 h-10 transform -rotate-90">
+                        <circle cx="20" cy="20" r="16" className="text-slate-200" strokeWidth="3" fill="transparent" stroke="currentColor" />
+                        <circle 
+                          cx="20" 
+                          cy="20" 
+                          r="16" 
+                          className={sandboxWeightedScore >= 75 ? "text-green-500" : sandboxWeightedScore >= 50 ? "text-blue-500" : "text-amber-500"} 
+                          strokeWidth="3" 
+                          fill="transparent" 
+                          stroke="currentColor" 
+                          strokeDasharray={2 * Math.PI * 16}
+                          strokeDashoffset={2 * Math.PI * 16 * (1 - sandboxWeightedScore / 100)}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-700">
+                        {sandboxWeightedScore}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Candidate Skills Configuration */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        Candidate Skill Set
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-bold">{sandboxCandidateSkills.length} active</span>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap gap-1.5 min-h-[110px] content-start">
+                      {sandboxCandidateSkills.map(s => (
+                        <button
+                          key={`cand-${s}`}
+                          onClick={() => setSandboxCandidateSkills(prev => prev.filter(x => x !== s))}
+                          className="px-2 py-1 bg-blue-100 hover:bg-red-50 hover:text-red-600 text-blue-800 border border-blue-200 rounded text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          {s} <span className="text-[8px] font-black opacity-60">✕</span>
+                        </button>
+                      ))}
+                      {sandboxCandidateSkills.length === 0 && (
+                        <span className="text-[10px] text-slate-400 italic">No skills selected. Click options below to add.</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Required Job Skills Configuration */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                        Required Job Vacancy
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-bold">{sandboxJobSkills.length} active</span>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap gap-1.5 min-h-[110px] content-start">
+                      {sandboxJobSkills.map(s => (
+                        <button
+                          key={`job-${s}`}
+                          onClick={() => setSandboxJobSkills(prev => prev.filter(x => x !== s))}
+                          className="px-2 py-1 bg-indigo-100 hover:bg-red-50 hover:text-red-600 text-indigo-800 border border-indigo-200 rounded text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          {s} <span className="text-[8px] font-black opacity-60">✕</span>
+                        </button>
+                      ))}
+                      {sandboxJobSkills.length === 0 && (
+                        <span className="text-[10px] text-slate-400 italic">No skills required. Click options below to add.</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Math Formula Output Realtime */}
+                  <div className="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <div>
+                      <div className="text-[9px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1">
+                        <Cpu className="w-3 h-3" /> Sandbox Calculation Log
+                      </div>
+                      
+                      <div className="mt-3 space-y-2 text-[10.5px]">
+                        <div className="flex justify-between border-b border-slate-800 pb-1">
+                          <span className="text-slate-400">Jaccard Intersection:</span>
+                          <span className="font-mono text-emerald-400 font-bold">{sandboxIntersection.length} matching</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-800 pb-1">
+                          <span className="text-slate-400">Jaccard Skills Gap:</span>
+                          <span className="font-mono text-amber-400 font-bold">{sandboxMissing.length} missing</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-800 pb-1">
+                          <span className="text-slate-400">Jaccard Match Index:</span>
+                          <span className="font-mono text-white font-bold">{Math.round(sandboxJaccardScore)}%</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-800 pb-1">
+                          <span className="text-slate-400">Semantic AI Approximation:</span>
+                          <span className="font-mono text-white font-bold">{Math.round(sandboxSemanticProxy)}%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-800">
+                      <div className="text-[8.5px] font-mono text-slate-500 leading-normal">
+                        SCORE = (0.6 * {Math.round(sandboxJaccardScore)}%) + (0.4 * {Math.round(sandboxSemanticProxy)}%) = <span className="text-indigo-400 font-bold">{sandboxWeightedScore}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Add Quick Pill Options helper */}
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">Toggle standard skill sets directly in either workspace:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {["Python", "PyTorch", "SQL", "FastAPI", "Docker", "AWS", "Git", "React", "TypeScript", "Node.js", "Kubernetes", "NoSQL"].map(tech => {
+                      const inCandidate = sandboxCandidateSkills.includes(tech);
+                      const inJob = sandboxJobSkills.includes(tech);
+                      
+                      return (
+                        <div key={tech} className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-md overflow-hidden text-[10px] font-bold">
+                          <span className="px-2 py-1 text-slate-700 bg-slate-100 border-r border-slate-200 font-mono">{tech}</span>
+                          
+                          <button
+                            onClick={() => {
+                              if (inCandidate) {
+                                setSandboxCandidateSkills(prev => prev.filter(x => x !== tech));
+                              } else {
+                                setSandboxCandidateSkills(prev => [...prev, tech]);
+                              }
+                            }}
+                            className={`px-1.5 py-1 text-[9px] cursor-pointer transition-colors ${inCandidate ? "bg-blue-600 text-white" : "hover:bg-blue-50 text-blue-600"}`}
+                          >
+                            +Cand
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              if (inJob) {
+                                setSandboxJobSkills(prev => prev.filter(x => x !== tech));
+                              } else {
+                                setSandboxJobSkills(prev => [...prev, tech]);
+                              }
+                            }}
+                            className={`px-1.5 py-1 text-[9px] cursor-pointer border-l border-slate-200 transition-colors ${inJob ? "bg-indigo-600 text-white" : "hover:bg-indigo-50 text-indigo-600"}`}
+                          >
+                            +Job
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-5 flex justify-end">
+                  <button 
+                    onClick={() => {
+                      setResumeFilename("sandbox_candidate_profile.txt");
+                      setResumeText(`Sandbox Mock Candidate\nSystems Engineer\nsandbox@example.com\n\nSkills: ${sandboxCandidateSkills.join(", ")}`);
+                      setShowAddResume(true);
+                      showNotification("Loaded simulator skills into the upload workspace! Just press Start NLP Skill Extraction.", "success");
+                    }}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Deploy Sandbox State to Real Talent Pool
+                  </button>
+                </div>
+
+              </div>
+
+              {/* CORE INTELLIGENT FEATURES CARDS DECK */}
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-1">Explore Core Platform Intelligent Features</h2>
+                <p className="text-xs text-slate-500 mb-4">Click any tab above or launch the Recruiter workspace to explore these modules live.</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">1</div>
+                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Structured LLM Parsing</h3>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-slate-500">
+                        Unstructured CVs in plain text are compiled server-side by Gemini into highly structured JSON profiles matching Pydantic definitions, extracting standard chronologies, degrees, and emails.
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Module: API /api/analyze-resume</div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">2</div>
+                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Automated Skill Gap Analysis</h3>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-slate-500">
+                        Compares applicant competencies against job vacancy requirement tokens. Instantly compiles an explicit gap report advising what specific certifications or tools the candidate lacks.
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Module: Semantic Parser Algorithm</div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">3</div>
+                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Dynamic Interview Guide</h3>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-slate-500">
+                        Our model drafts three targeted technical screen questions addressing both the candidate's core background highlights and the job's distinct technology specifications.
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Module: Gemini NLP Orchestrator</div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          )}
+
           {activeTab === "matches" && (
-            <div className="flex-1 flex gap-6 overflow-hidden min-h-[480px]">
+            <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-y-auto lg:overflow-hidden lg:min-h-[480px]">
               
               {/* Left Column: Match Selection and Job Scoring Matrix */}
               <div className="flex-1 bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden shadow-sm">
@@ -571,7 +999,7 @@ export default function App() {
                 </div>
 
                 {/* Candidate Matching List */}
-                <div className="overflow-y-auto flex-1">
+                <div className="overflow-x-auto overflow-y-auto flex-1">
                   {filteredCandidatesList.length === 0 ? (
                     <div className="p-8 text-center" id="no-candidates-matched-view">
                       <Users className="w-12 h-12 text-slate-300 mx-auto mb-2" />
@@ -579,12 +1007,12 @@ export default function App() {
                       <p className="text-[10px] text-slate-400 mt-1">Try reloading jobs, uploading sample resumes, or resetting filters.</p>
                     </div>
                   ) : (
-                    <table className="w-full text-left text-xs">
+                    <table className="w-full text-left text-xs min-w-[600px] lg:min-w-full">
                       <thead className="bg-[#FAFBFD] sticky top-0 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100">
                         <tr>
                           <th className="p-3 pl-4 w-12">Select</th>
                           <th className="p-3">Candidate / Context</th>
-                          <th className="p-3">Predicted Domain</th>
+                          <th className="p-3 hidden sm:table-cell">Predicted Domain</th>
                           <th className="p-3 text-center">Current Score</th>
                           <th className="p-3 text-center">Shortlist Status</th>
                           <th className="p-3 text-right">Action</th>
@@ -639,8 +1067,11 @@ export default function App() {
                                   <span>•</span>
                                   <span className="truncate max-w-[100px]">{c.education || "CV Provided"}</span>
                                 </div>
+                                <span className="inline-block sm:hidden mt-1 px-1.5 py-0.5 bg-slate-100 text-slate-700 font-bold rounded text-[8px] uppercase tracking-wide">
+                                  {c.predictedRole}
+                                </span>
                               </td>
-                              <td className="p-3">
+                              <td className="p-3 hidden sm:table-cell">
                                 <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-bold rounded text-[9px] uppercase tracking-wide">
                                   {c.predictedRole}
                                 </span>
@@ -1215,7 +1646,7 @@ export default function App() {
                 <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wide">
                   Quick Demo Tool (Single Click to test Gemini Parser):
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button 
                     type="button"
                     onClick={() => pasteSampleResume("ml")}
@@ -1238,6 +1669,44 @@ export default function App() {
                     📋 Tim Collins (Product PM)
                   </button>
                 </div>
+              </div>
+
+              <div className="bg-blue-50/50 p-4 rounded-lg border border-dashed border-blue-300 flex flex-col items-center justify-center text-center gap-2">
+                <FileText className="w-8 h-8 text-blue-500" />
+                <div>
+                  <label className="block text-xs font-bold text-slate-700">
+                    Upload Your Resume File (.txt, .md, .json)
+                  </label>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Drag & drop or click to select a text file to populate details below.</p>
+                </div>
+                <input 
+                  id="local-resume-file-selector"
+                  type="file" 
+                  accept=".txt,.md,.json"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setResumeFilename(file.name);
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const content = event.target?.result as string;
+                        if (content) {
+                          setResumeText(content);
+                          showNotification(`Loaded content from file: ${file.name}`, "success");
+                        }
+                      };
+                      reader.readAsText(file);
+                    }
+                  }}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("local-resume-file-selector")?.click()}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10.5px] font-bold rounded shadow-sm cursor-pointer"
+                >
+                  Choose Local File
+                </button>
               </div>
 
               <div>
