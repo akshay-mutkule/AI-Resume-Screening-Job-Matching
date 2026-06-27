@@ -35,3 +35,12 @@ class AnalyzeResumeRequest(BaseModel):
 class MatchingRequest(BaseModel):
     candidateId: str
     jobId: str
+
+class CompareRequest(BaseModel):
+    candidateId1: str
+    candidateId2: str
+    jobId: str
+
+class EnhanceRequest(BaseModel):
+    candidateId: str
+    jobId: str

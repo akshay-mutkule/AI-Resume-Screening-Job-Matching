@@ -24,7 +24,10 @@ import {
   Clock, 
   GraduationCap, 
   Award,
-  AlertCircle
+  AlertCircle,
+  Swords,
+  Wand2,
+  BarChart3
 } from "lucide-react";
 import { Candidate, JobDescription, MatchReport } from "./types";
 
@@ -37,9 +40,24 @@ export default function App() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   
   // Navigation & UI state
-  const [activeTab, setActiveTab] = useState<"home" | "matches" | "jobs" | "talent">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "matches" | "jobs" | "talent" | "battle" | "enhancer" | "trends">("home");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedJobFilter, setSelectedJobFilter] = useState<string>("all");
+  
+  // Advanced Features State
+  const [compareCand1Id, setCompareCand1Id] = useState<string>("");
+  const [compareCand2Id, setCompareCand2Id] = useState<string>("");
+  const [compareJobId, setCompareJobId] = useState<string>("");
+  const [isLoadingCompare, setIsLoadingCompare] = useState<boolean>(false);
+  const [compareResult, setCompareResult] = useState<any>(null);
+
+  const [enhanceCandId, setEnhanceCandId] = useState<string>("");
+  const [enhanceJobId, setEnhanceJobId] = useState<string>("");
+  const [isLoadingEnhance, setIsLoadingEnhance] = useState<boolean>(false);
+  const [enhanceResult, setEnhanceResult] = useState<any>(null);
+
+  const [isLoadingTrends, setIsLoadingTrends] = useState<boolean>(false);
+  const [trendsResult, setTrendsResult] = useState<any>(null);
   
   // Home Sandbox Simulator State
   const [sandboxCandidateSkills, setSandboxCandidateSkills] = useState<string[]>(["Python", "Docker", "SQL", "Git", "React"]);
@@ -110,6 +128,21 @@ export default function App() {
     };
     init();
   }, []);
+
+  useEffect(() => {
+    if (candidates.length > 0) {
+      if (!compareCand1Id) setCompareCand1Id(candidates[0].id);
+      if (!compareCand2Id) setCompareCand2Id(candidates[1]?.id || candidates[0].id);
+      if (!enhanceCandId) setEnhanceCandId(candidates[0].id);
+    }
+  }, [candidates]);
+
+  useEffect(() => {
+    if (jobs.length > 0) {
+      if (!compareJobId) setCompareJobId(jobs[0].id);
+      if (!enhanceJobId) setEnhanceJobId(jobs[0].id);
+    }
+  }, [jobs]);
 
   const showNotification = (message: string, type: "success" | "error" | "info" = "success") => {
     setNotification({ message, type });
@@ -299,6 +332,93 @@ export default function App() {
     }
   };
 
+  const runBattleComparison = async () => {
+    if (!compareCand1Id || !compareCand2Id || !compareJobId) {
+      showNotification("Please select two candidates and a target job specification first.", "error");
+      return;
+    }
+    if (compareCand1Id === compareCand2Id) {
+      showNotification("Please select two distinct candidates to compare.", "error");
+      return;
+    }
+    setIsLoadingCompare(true);
+    setCompareResult(null);
+    try {
+      const res = await fetch("/api/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          candidateId1: compareCand1Id,
+          candidateId2: compareCand2Id,
+          jobId: compareJobId
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCompareResult(data);
+        showNotification("Side-by-side battle comparison computed!", "success");
+      } else {
+        const err = await res.json();
+        showNotification(err.detail || "Failed to generate comparison.", "error");
+      }
+    } catch (err) {
+      showNotification("Error communicating with backend.", "error");
+    } finally {
+      setIsLoadingCompare(false);
+    }
+  };
+
+  const runResumeEnhancement = async () => {
+    if (!enhanceCandId || !enhanceJobId) {
+      showNotification("Please select a candidate and a target job spec to optimize.", "error");
+      return;
+    }
+    setIsLoadingEnhance(true);
+    setEnhanceResult(null);
+    try {
+      const res = await fetch("/api/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          candidateId: enhanceCandId,
+          jobId: enhanceJobId
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEnhanceResult(data);
+        showNotification("Resume enhancement recommendations parsed!", "success");
+      } else {
+        const err = await res.json();
+        showNotification(err.detail || "Failed to generate optimization report.", "error");
+      }
+    } catch (err) {
+      showNotification("Network error. Please try again.", "error");
+    } finally {
+      setIsLoadingEnhance(false);
+    }
+  };
+
+  const fetchSkillsTrends = async () => {
+    setIsLoadingTrends(true);
+    setTrendsResult(null);
+    try {
+      const res = await fetch("/api/skills-trend");
+      if (res.ok) {
+        const data = await res.json();
+        setTrendsResult(data);
+        showNotification("Recruitment skills insights aggregated!", "success");
+      } else {
+        showNotification("Failed to fetch skills trend analysis.", "error");
+      }
+    } catch (err) {
+      showNotification("Error contacting backend servers.", "error");
+    } finally {
+      setIsLoadingTrends(false);
+    }
+  };
+
+
   const selectedCandidate = candidates.find(c => c.id === selectedCandidateId) || candidates[0];
   const selectedJob = jobs.find(j => j.id === selectedJobId) || jobs[0];
 
@@ -433,8 +553,8 @@ export default function App() {
           onClick={() => setActiveTab("jobs")}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
             activeTab === "jobs" 
-              ? "bg-blue-50 text-blue-700" 
-              : "text-slate-600 hover:bg-slate-50"
+              ? "bg-blue-50 text-blue-700 font-extrabold" 
+              : "text-slate-600 hover:bg-slate-50 font-semibold"
           }`}
         >
           <Briefcase className="w-3.5 h-3.5 text-blue-500" />
@@ -443,14 +563,53 @@ export default function App() {
         <button 
           id="mobile-tab-btn-talent"
           onClick={() => setActiveTab("talent")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex-1 flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
             activeTab === "talent" 
-              ? "bg-blue-50 text-blue-700" 
-              : "text-slate-600 hover:bg-slate-50"
+              ? "bg-blue-50 text-blue-700 font-extrabold" 
+              : "text-slate-600 hover:bg-slate-50 font-semibold"
           }`}
         >
           <Users className="w-3.5 h-3.5 text-blue-500" />
           Talent ({candidates.length})
+        </button>
+        <button 
+          id="mobile-tab-btn-battle"
+          onClick={() => setActiveTab("battle")}
+          className={`flex-1 flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === "battle" 
+              ? "bg-blue-50 text-blue-700 font-extrabold" 
+              : "text-slate-600 hover:bg-slate-50 font-semibold"
+          }`}
+        >
+          <Swords className="w-3.5 h-3.5 text-blue-500" />
+          Battle
+        </button>
+        <button 
+          id="mobile-tab-btn-enhancer"
+          onClick={() => setActiveTab("enhancer")}
+          className={`flex-1 flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === "enhancer" 
+              ? "bg-blue-50 text-blue-700 font-extrabold" 
+              : "text-slate-600 hover:bg-slate-50 font-semibold"
+          }`}
+        >
+          <Wand2 className="w-3.5 h-3.5 text-blue-500" />
+          Optimize
+        </button>
+        <button 
+          id="mobile-tab-btn-trends"
+          onClick={() => {
+            setActiveTab("trends");
+            fetchSkillsTrends();
+          }}
+          className={`flex-1 flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-2 rounded-md font-bold text-[11px] transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === "trends" 
+              ? "bg-blue-50 text-blue-700 font-extrabold" 
+              : "text-slate-600 hover:bg-slate-50 font-semibold"
+          }`}
+        >
+          <BarChart3 className="w-3.5 h-3.5 text-blue-500" />
+          Trends
         </button>
       </div>
 
@@ -478,7 +637,7 @@ export default function App() {
             onClick={() => setActiveTab("matches")}
             className={`flex items-center gap-3 px-3 py-2 rounded-md font-semibold text-xs text-left cursor-pointer transition-all ${
               activeTab === "matches" 
-                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600" 
+                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-bold" 
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
@@ -491,7 +650,7 @@ export default function App() {
             onClick={() => setActiveTab("jobs")}
             className={`flex items-center gap-3 px-3 py-2 rounded-md font-semibold text-xs text-left cursor-pointer transition-all ${
               activeTab === "jobs" 
-                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600" 
+                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-bold" 
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
@@ -504,13 +663,59 @@ export default function App() {
             onClick={() => setActiveTab("talent")}
             className={`flex items-center gap-3 px-3 py-2 rounded-md font-semibold text-xs text-left cursor-pointer transition-all ${
               activeTab === "talent" 
-                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600" 
+                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-bold" 
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
             <Users className="w-4 h-4 text-blue-500" />
             Talent Pool ({candidates.length})
           </button>
+
+          <div className="border-t border-slate-100 my-2"></div>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Advanced AI Analytics</div>
+          
+          <button 
+            id="tab-btn-battle"
+            onClick={() => setActiveTab("battle")}
+            className={`flex items-center gap-3 px-3 py-2 rounded-md font-semibold text-xs text-left cursor-pointer transition-all ${
+              activeTab === "battle" 
+                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-bold" 
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Swords className="w-4 h-4 text-blue-500" />
+            Candidate Battle Mode
+          </button>
+          
+          <button 
+            id="tab-btn-enhancer"
+            onClick={() => setActiveTab("enhancer")}
+            className={`flex items-center gap-3 px-3 py-2 rounded-md font-semibold text-xs text-left cursor-pointer transition-all ${
+              activeTab === "enhancer" 
+                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-bold" 
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Wand2 className="w-4 h-4 text-blue-500" />
+            ATS Resume Optimizer
+          </button>
+          
+          <button 
+            id="tab-btn-trends"
+            onClick={() => {
+              setActiveTab("trends");
+              fetchSkillsTrends();
+            }}
+            className={`flex items-center gap-3 px-3 py-2 rounded-md font-semibold text-xs text-left cursor-pointer transition-all ${
+              activeTab === "trends" 
+                ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-bold" 
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 text-blue-500" />
+            Market Sourcing Gaps
+          </button>
+
 
           <div className="border-t border-slate-100 my-4"></div>
 
@@ -1592,6 +1797,543 @@ export default function App() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* CANDIDATE BATTLE MODE TAB */}
+          {activeTab === "battle" && (
+            <div className="flex-1 flex flex-col gap-6 animate-fadeIn" id="candidate-battle-view">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <h2 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <Swords className="w-5 h-5 text-blue-600" />
+                  Candidate Side-by-Side Battle Mode
+                </h2>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Compare two parsed portfolios against a specific job opening. Gemini AI will evaluate relative competence matrices, isolated strengths, and return an official hiring recommendation.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Candidate A:</label>
+                    <select 
+                      value={compareCand1Id} 
+                      onChange={(e) => setCompareCand1Id(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs outline-none"
+                    >
+                      <option value="">-- Select Candidate --</option>
+                      {candidates.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.predictedRole})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Candidate B:</label>
+                    <select 
+                      value={compareCand2Id} 
+                      onChange={(e) => setCompareCand2Id(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs outline-none"
+                    >
+                      <option value="">-- Select Candidate --</option>
+                      {candidates.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.predictedRole})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Target Job Position:</label>
+                    <select 
+                      value={compareJobId} 
+                      onChange={(e) => setCompareJobId(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs outline-none"
+                    >
+                      <option value="">-- Select Job Description --</option>
+                      {jobs.map(j => (
+                        <option key={j.id} value={j.id}>{j.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={runBattleComparison}
+                    disabled={isLoadingCompare || !compareCand1Id || !compareCand2Id || !compareJobId}
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold text-xs rounded-lg shadow-md flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    {isLoadingCompare ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Evaluating relative domains with Gemini...
+                      </>
+                    ) : (
+                      <>
+                        <Swords className="w-4 h-4" /> Run Side-by-Side Competency Battle
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {isLoadingCompare && (
+                <div className="flex-1 flex flex-col items-center justify-center py-16 bg-white border border-slate-200 rounded-xl">
+                  <div className="relative w-16 h-16 flex items-center justify-center">
+                    <div className="absolute inset-0 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <Swords className="w-6 h-6 text-indigo-600 animate-pulse" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-sm mt-4">Assembling Head-to-Head Comparison...</h3>
+                  <p className="text-slate-400 text-[11px] mt-1 text-center max-w-sm leading-relaxed px-4">
+                    Gemini AI is parsing the skillsets of both candidates and comparing them side-by-side against the specified target job description.
+                  </p>
+                </div>
+              )}
+
+              {compareResult && (
+                <div className="space-y-6 animate-fadeIn" id="compare-results-matrix">
+                  
+                  {/* Scoreboard Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    {/* Candidate A Scorecard */}
+                    <div className="bg-white border-2 border-blue-100 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                      <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-lg">Candidate A</div>
+                      <h3 className="font-extrabold text-base text-slate-900">{compareResult.candidate1Name}</h3>
+                      <div className="text-[10px] text-blue-600 font-bold mt-0.5 uppercase tracking-wide">Competence Score</div>
+                      
+                      <div className="flex items-center gap-4 mt-4">
+                        <div className="w-16 h-16 relative shrink-0">
+                          <svg className="w-16 h-16 transform -rotate-90">
+                            <circle cx="32" cy="32" r="26" className="text-slate-100" strokeWidth="4" fill="transparent" stroke="currentColor" />
+                            <circle cx="32" cy="32" r="26" className="text-blue-600" strokeWidth="4" fill="transparent" stroke="currentColor" strokeDasharray={2 * Math.PI * 26} strokeDashoffset={2 * Math.PI * 26 * (1 - compareResult.scoreA / 100)} />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center text-sm font-black text-slate-800">{compareResult.scoreA}%</div>
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase">Primary Strengths:</h4>
+                          <ul className="text-[11px] text-slate-600 space-y-1 mt-1 list-disc list-inside">
+                            {compareResult.strengthsA.slice(0, 3).map((s: string, i: number) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Candidate B Scorecard */}
+                    <div className="bg-white border-2 border-indigo-100 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                      <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-lg">Candidate B</div>
+                      <h3 className="font-extrabold text-base text-slate-900">{compareResult.candidate2Name}</h3>
+                      <div className="text-[10px] text-indigo-600 font-bold mt-0.5 uppercase tracking-wide">Competence Score</div>
+                      
+                      <div className="flex items-center gap-4 mt-4">
+                        <div className="w-16 h-16 relative shrink-0">
+                          <svg className="w-16 h-16 transform -rotate-90">
+                            <circle cx="32" cy="32" r="26" className="text-slate-100" strokeWidth="4" fill="transparent" stroke="currentColor" />
+                            <circle cx="32" cy="32" r="26" className="text-indigo-600" strokeWidth="4" fill="transparent" stroke="currentColor" strokeDasharray={2 * Math.PI * 26} strokeDashoffset={2 * Math.PI * 26 * (1 - compareResult.scoreB / 100)} />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center text-sm font-black text-slate-800">{compareResult.scoreB}%</div>
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase">Primary Strengths:</h4>
+                          <ul className="text-[11px] text-slate-600 space-y-1 mt-1 list-disc list-inside">
+                            {compareResult.strengthsB.slice(0, 3).map((s: string, i: number) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Verdict Block */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-5 rounded-xl shadow-sm">
+                    <span className="px-2.5 py-1 bg-blue-600 text-white font-black text-[9px] uppercase tracking-wider rounded-full inline-flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" /> AI Selection Verdict
+                    </span>
+                    <h4 className="font-extrabold text-slate-800 text-sm mt-3 flex items-center gap-2">
+                      Key Deciding Factor: <span className="text-blue-700 font-black">"{compareResult.keyDifferentiator}"</span>
+                    </h4>
+                    <p className="text-[11.5px] leading-relaxed text-slate-700 mt-2 whitespace-pre-line">
+                      {compareResult.verdict}
+                    </p>
+                  </div>
+
+                  {/* Detailed Criteria Matrix Table */}
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-slate-100 bg-slate-50 font-bold text-xs text-slate-800">
+                      Cross-Evaluation Criteria Table
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-500 font-bold border-b border-slate-200">
+                            <th className="p-3 w-1/4">Evaluation Category</th>
+                            <th className="p-3 w-3/8 border-l border-slate-200 bg-blue-50/25">{compareResult.candidate1Name} (A)</th>
+                            <th className="p-3 w-3/8 border-l border-slate-200 bg-indigo-50/25">{compareResult.candidate2Name} (B)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {compareResult.comparisonPoints.map((pt: any, i: number) => (
+                            <tr key={i} className="hover:bg-slate-50/50">
+                              <td className="p-3 font-bold text-slate-700">{pt.category}</td>
+                              <td className="p-3 text-[11px] leading-normal text-slate-600 border-l border-slate-200">{pt.candAFeedback}</td>
+                              <td className="p-3 text-[11px] leading-normal text-slate-600 border-l border-slate-200">{pt.candBFeedback}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Weaknesses / Sourcing Gaps */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                      <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1 text-amber-700">
+                        <AlertCircle className="w-3.5 h-3.5" /> Gaps & Concerns (Candidate A)
+                      </h4>
+                      <ul className="text-[11px] text-slate-600 space-y-1.5 list-inside list-disc">
+                        {compareResult.gapsA.map((g: string, i: number) => (
+                          <li key={i}>{g}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                      <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1 text-amber-700">
+                        <AlertCircle className="w-3.5 h-3.5" /> Gaps & Concerns (Candidate B)
+                      </h4>
+                      <ul className="text-[11px] text-slate-600 space-y-1.5 list-inside list-disc">
+                        {compareResult.gapsB.map((g: string, i: number) => (
+                          <li key={i}>{g}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {!isLoadingCompare && !compareResult && (
+                <div className="p-12 text-center bg-white border border-slate-200 rounded-xl" id="blank-battle-compare-pitch">
+                  <Swords className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <h4 className="font-bold text-sm text-slate-700 font-sans">No Evaluation Drafted</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                    Select two distinct candidate portfolios from the dropdown and assign a target vacancy to run deep relative suitability analysis.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ATS RESUME OPTIMIZER TAB */}
+          {activeTab === "enhancer" && (
+            <div className="flex-1 flex flex-col gap-6 animate-fadeIn" id="ats-optimizer-view">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <h2 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <Wand2 className="w-5 h-5 text-blue-600" />
+                  ATS Resume Optimizer & Tailoring Agent
+                </h2>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Re-align and tune an applicant's resume elements to perfectly match active job specifications. Our Gemini agent reconstructs summaries, rewrites work-experience bullets using metrics-driven action verbs, and lists target vocabulary keywords to clear corporate parsing filters.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Target Candidate:</label>
+                    <select 
+                      value={enhanceCandId} 
+                      onChange={(e) => setEnhanceCandId(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs outline-none"
+                    >
+                      <option value="">-- Select Candidate --</option>
+                      {candidates.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.predictedRole})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Target Job Description:</label>
+                    <select 
+                      value={enhanceJobId} 
+                      onChange={(e) => setEnhanceJobId(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs outline-none"
+                    >
+                      <option value="">-- Select Job Opening --</option>
+                      {jobs.map(j => (
+                        <option key={j.id} value={j.id}>{j.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={runResumeEnhancement}
+                    disabled={isLoadingEnhance || !enhanceCandId || !enhanceJobId}
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold text-xs rounded-lg shadow-md flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    {isLoadingEnhance ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Reconstructing bullet portfolios with Gemini...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4" /> Generate Resume Enhancements
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {isLoadingEnhance && (
+                <div className="flex-1 flex flex-col items-center justify-center py-16 bg-white border border-slate-200 rounded-xl">
+                  <div className="relative w-16 h-16 flex items-center justify-center">
+                    <div className="absolute inset-0 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <Wand2 className="w-6 h-6 text-indigo-600 animate-pulse" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-sm mt-4">Drafting Tailored Adjustments...</h3>
+                  <p className="text-slate-400 text-[11px] mt-1 text-center max-w-sm leading-relaxed px-4">
+                    Gemini Career Writing Engine is performing semantic comparison, identifying critical keyword voids, and optimizing bullet point narratives.
+                  </p>
+                </div>
+              )}
+
+              {enhanceResult && (
+                <div className="space-y-6 animate-fadeIn" id="enhance-results-matrix">
+                  
+                  {/* Summary Comparison Block */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm flex flex-col">
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Original Profile Summary</div>
+                      <p className="text-xs text-slate-500 leading-relaxed italic flex-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        {enhanceResult.originalSummary || "No explicit summary provided in candidate's original resume."}
+                      </p>
+                    </div>
+
+                    <div className="bg-white border-2 border-green-100 p-5 rounded-xl shadow-sm flex flex-col relative overflow-hidden">
+                      <div className="absolute top-0 right-0 bg-green-500 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-bl-lg">Optimized for ATS</div>
+                      <div className="text-[9px] font-black text-green-700 uppercase tracking-widest mb-2">Enhanced Professional Summary</div>
+                      <p className="text-xs text-slate-800 font-medium leading-relaxed flex-1 bg-green-50/30 p-3 rounded-lg border border-green-100/50">
+                        {enhanceResult.enhancedSummary}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Suggested Keyword Chips */}
+                  <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
+                    <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Suggested Skills & Technologies to Append:</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {enhanceResult.suggestedSkillsToAdd.map((s: string, idx: number) => (
+                        <span key={idx} className="bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded text-xs font-bold uppercase font-mono">
+                          + {s}
+                        </span>
+                      ))}
+                      {enhanceResult.suggestedSkillsToAdd.length === 0 && (
+                        <span className="text-xs italic text-slate-400">All key required tech keywords already present! Excellent portfolio.</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-2">Explicitly including these synonyms and software categories prevents immediate filtering by screening parsers.</p>
+                  </div>
+
+                  {/* Bullet Points optimizations */}
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-slate-100 bg-slate-50 font-bold text-xs text-slate-800">
+                      Work Experience Bullet Optimizer (Impact- & Metric-Driven)
+                    </div>
+                    <div className="p-4 divide-y divide-slate-100 space-y-4">
+                      {enhanceResult.bulletOptimizations.map((b: any, idx: number) => (
+                        <div key={idx} className={`pt-4 first:pt-0 grid grid-cols-1 md:grid-cols-2 gap-4 align-top`}>
+                          <div className="space-y-1.5">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Original Experience Bullet</span>
+                            <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs text-slate-600 font-mono italic">
+                              "{b.originalBullet}"
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <span className="text-[9px] font-bold text-green-700 uppercase tracking-widest">AI Proposed Impact Rewrite</span>
+                            <div className="bg-green-50/20 border border-green-100 p-3 rounded-lg text-xs text-slate-800 font-semibold leading-relaxed">
+                              "{b.suggestedBullet}"
+                            </div>
+                            <div className="text-[10.5px] text-slate-400 pl-1 leading-normal">
+                              <strong>ATS Improvement Rationale:</strong> {b.rationale}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Structural critique */}
+                  <div className="bg-slate-900 text-slate-100 p-5 rounded-xl shadow-sm border border-slate-800">
+                    <h4 className="text-[10px] font-extrabold text-amber-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" /> Career Consultant Resume Critique
+                    </h4>
+                    <p className="text-xs leading-relaxed text-slate-300 whitespace-pre-line leading-normal">
+                      {enhanceResult.resumeCritique}
+                    </p>
+                  </div>
+
+                </div>
+              )}
+
+              {!isLoadingEnhance && !enhanceResult && (
+                <div className="p-12 text-center bg-white border border-slate-200 rounded-xl" id="blank-enhancer-pitch">
+                  <Wand2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <h4 className="font-bold text-sm text-slate-700 font-sans">No Enhancements Drafted</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                    Select a candidate profile and an target vacancy spec, then press the optimize button to construct keyword-tailored enhancements.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* LABOR MARKET TRENDS & SOURCING GAP TAB */}
+          {activeTab === "trends" && (
+            <div className="flex-1 flex flex-col gap-6 animate-fadeIn" id="market-trends-view">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                      Labour Market Skills Trend Analyst
+                    </h2>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Aggregated analytics over our active database comparing skill demand frequency in job postings vs. active supply frequency in candidate profiles.
+                    </p>
+                  </div>
+                  <button
+                    onClick={fetchSkillsTrends}
+                    disabled={isLoadingTrends}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold text-xs rounded shadow flex items-center gap-1.5 cursor-pointer whitespace-nowrap self-start"
+                  >
+                    {isLoadingTrends ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Aggregating...
+                      </>
+                    ) : (
+                      <>
+                        <TrendingUp className="w-3.5 h-3.5" /> Recalculate Trends
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {isLoadingTrends && (
+                <div className="flex-1 flex flex-col items-center justify-center py-16 bg-white border border-slate-200 rounded-xl">
+                  <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                  <h3 className="font-bold text-slate-800 text-sm mt-4">Compiling market ratios...</h3>
+                </div>
+              )}
+
+              {trendsResult && (
+                <div className="space-y-6 animate-fadeIn" id="trends-results-matrix">
+                  
+                  {/* Supply and Demand Gaps list */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    {/* Top Job Demand */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col">
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide border-b border-slate-100 pb-2 mb-3">
+                        🔥 Top Skills In Demand (Jobs)
+                      </h3>
+                      <div className="space-y-3 flex-1">
+                        {trendsResult.topRequestedSkills.slice(0, 6).map((item: any, i: number) => (
+                          <div key={i} className="space-y-1">
+                            <div className="flex justify-between text-[11px] font-bold">
+                              <span className="text-slate-700 font-mono">{item.skill}</span>
+                              <span className="text-slate-500">{item.demandCount} openings ({item.demandPercentage}%)</span>
+                            </div>
+                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                              <div className="bg-blue-600 h-full rounded-full" style={{ width: `${item.demandPercentage}%` }}></div>
+                            </div>
+                          </div>
+                        ))}
+                        {trendsResult.topRequestedSkills.length === 0 && (
+                          <div className="text-xs text-slate-400 italic text-center py-8">Define job openings to trace demand.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Top Applicant Supply */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col">
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide border-b border-slate-100 pb-2 mb-3">
+                        🤝 Top Skills in Supply (Candidates)
+                      </h3>
+                      <div className="space-y-3 flex-1">
+                        {trendsResult.topSuppliedSkills.slice(0, 6).map((item: any, i: number) => (
+                          <div key={i} className="space-y-1">
+                            <div className="flex justify-between text-[11px] font-bold">
+                              <span className="text-slate-700 font-mono">{item.skill}</span>
+                              <span className="text-slate-500">{item.supplyCount} profiles ({item.supplyPercentage}%)</span>
+                            </div>
+                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                              <div className="bg-green-600 h-full rounded-full" style={{ width: `${item.supplyPercentage}%` }}></div>
+                            </div>
+                          </div>
+                        ))}
+                        {trendsResult.topSuppliedSkills.length === 0 && (
+                          <div className="text-xs text-slate-400 italic text-center py-8">Load client resumes to trace supply metrics.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Critical Sourcing Shortages */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col">
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide border-b border-slate-100 pb-2 mb-3">
+                        ⚠️ Critical Sourcing Shortages (Gap)
+                      </h3>
+                      <div className="space-y-3 flex-1">
+                        {trendsResult.supplyDemandGap.slice(0, 6).map((item: any, i: number) => (
+                          <div key={i} className="space-y-1">
+                            <div className="flex justify-between text-[11px] font-bold">
+                              <span className="text-slate-700 font-mono">{item.skill}</span>
+                              <span className="text-amber-700">{item.gapValue}% gap points</span>
+                            </div>
+                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                              <div className="bg-amber-500 h-full rounded-full" style={{ width: `${item.gapValue}%` }}></div>
+                            </div>
+                            <div className="text-[9px] text-slate-400">
+                              Requires: {item.demandCount} jobs • Found: {item.supplyCount} applicants
+                            </div>
+                          </div>
+                        ))}
+                        {trendsResult.supplyDemandGap.length === 0 && (
+                          <div className="text-xs text-slate-400 italic text-center py-8">Gap analytics will populate on load.</div>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* AI Labor Market Narrative */}
+                  <div className="bg-slate-900 border border-slate-800 text-slate-100 p-5 rounded-xl shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 w-60 h-60 bg-blue-500/5 rounded-full blur-3xl"></div>
+                    
+                    <h3 className="font-extrabold text-sm text-amber-400 flex items-center gap-1.5 uppercase tracking-wide border-b border-slate-800 pb-3 mb-4">
+                      <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                      AI Executive Sourcing Analysis & Advisory
+                    </h3>
+                    
+                    <p className="text-xs leading-relaxed text-slate-300 whitespace-pre-line leading-normal" style={{ whiteSpace: "pre-wrap" }}>
+                      {trendsResult.aiMarketNarrative}
+                    </p>
+                  </div>
+
+                </div>
+              )}
+
+              {!isLoadingTrends && !trendsResult && (
+                <div className="p-12 text-center bg-white border border-slate-200 rounded-xl" id="blank-trends-pitch">
+                  <BarChart3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <h4 className="font-bold text-sm text-slate-700 font-sans">No Market Analysis Loaded</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                    Press the "Recalculate Trends" button in the upper right to parse supply-demand metrics and build labor market analytics dynamically.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
