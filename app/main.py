@@ -125,9 +125,9 @@ def analyze_resume(req: AnalyzeResumeRequest):
     if not req.resumeText or not req.resumeText.strip():
         raise HTTPException(status_code=400, detail="Please paste or provide resume text to analyze.")
         
-    system_prompt = "You are an elite AI Resume Parser and HR Recruiter. Extract metrics precisely to match the structured schema."
+    system_prompt = "You are a friendly, encouraging resume reader. Help extract the candidate's details in warm, simple, humanized, and supportive language that anyone can easily understand. Avoid dry technical jargon, keep descriptions down-to-earth and highly approachable."
     
-    prompt = f"""Extract candidate bio, credentials and skills from this raw candidate resume.
+    prompt = f"""Read this resume and extract the key details. For any descriptive fields like experienceSummary, write them in a friendly, simple, and highly readable human tone.
 Resume text:
 {req.resumeText}
 """
@@ -189,10 +189,11 @@ def match_candidate_job(req: MatchingRequest):
     if not cand or not job:
         raise HTTPException(status_code=404, detail="Candidate profile or target Job posting not found.")
         
-    system_prompt = "You are a professional recruiting algorithms compiler. Compute candidate match matrix overlapping metrics."
+    system_prompt = "You are a friendly, encouraging career advisor. Explain candidate job suitability in simple, warm, supportive, and humanized language that anyone can easily understand. Avoid cold, dry algorithmic jargon, system metrics talk, or technical formulas."
     
     prompt = f"""
-Compare the candidate's custom resume against the target job posting title and details.
+Compare this candidate's resume with the target job description. Write the suitability explanation, gap analysis, and interview questions in a warm, simple, encouraging, and highly readable human tone. No complex recruiter slang.
+Make sure the interview questions are simple, friendly, and helpful for a casual conversation.
 
 Candidate Name: "{cand.get('name')}"
 Candidate Predicted Role: "{cand.get('predictedRole')}"
@@ -280,10 +281,10 @@ def compare_candidates(req: CompareRequest):
     if not cand1 or not cand2 or not job:
         raise HTTPException(status_code=404, detail="One or more candidate profiles or target Job posting not found.")
         
-    system_prompt = "You are a professional recruiting panel analyst. Compare two candidates side-by-side for a specific job."
+    system_prompt = "You are a friendly, down-to-earth hiring advisor. Compare the two candidates side-by-side in a warm, highly clear, simple, and humanized way that anyone can understand. Focus on practical, real-world examples and helpful feedback. Do not use complex jargon or dry clinical wording."
     
     prompt = f"""
-Compare Candidate A and Candidate B side-by-side for the target job opening.
+Compare Candidate A and Candidate B side-by-side for the target job opening. Write the verdict, key differentiators, strengths, and feedback categories in an encouraging, extremely simple, and accessible tone. Avoid complex recruiter terms.
 
 Job Posting:
 Title: {job.get('title')}
@@ -362,11 +363,10 @@ def enhance_resume(req: EnhanceRequest):
     if not cand or not job:
         raise HTTPException(status_code=404, detail="Candidate profile or target Job posting not found.")
         
-    system_prompt = "You are an elite expert in resume writing, ATS (Applicant Tracking System) optimization, and career coaching."
+    system_prompt = "You are a friendly, encouraging career advisor and supportive resume coach. Provide helpful, down-to-earth tips and rewrites on how to improve the resume in extremely clear, simple, warm, and humanized language that anyone can understand. Keep it engaging, practical, and highly positive."
     
     prompt = f"""
-Optimize this candidate's resume summary, skills list, and bullet points specifically to match the target job description.
-The target is to maximize their match rate in an Applicant Tracking System while maintaining truthfulness.
+Help improve this candidate's resume so it matches the target job nicely. Write the enhanced summary, critique, and work bullet rewrites in a warm, simple, supportive, and human tone that is super easy to read and highly encouraging.
 
 Job Posting:
 Title: {job.get('title')}
@@ -473,26 +473,27 @@ def skills_trend_analysis():
     
     # Generate an intelligent AI Market Narrative
     if not jobs or not candidates:
-        ai_narrative = "Please configure more job specifications and upload candidate resumes to generate an AI-powered talent market insight report."
+        ai_narrative = "Please add some job openings and upload candidate resumes to build your friendly skills gap report!"
     else:
-        system_prompt = "You are a Chief People Officer and labor market expert specializing in technical sourcing and skills analytics."
+        system_prompt = "You are a friendly, down-to-earth career advisor who makes job market trends simple to understand. Describe the skills trends in warm, clear, everyday language that anyone can understand. Keep it engaging, straightforward, and humanized."
         prompt = f"""
-Analyze the skills market dynamic between our open jobs and applicant talent pool.
+Analyze the skills trends between our job openings and candidates.
 
 Total Job Openings: {total_jobs}
-Requested Job Skills frequency: {job_skills_count}
+Job Skills Requested: {job_skills_count}
 
 Total Candidates: {total_candidates}
-Possessed Candidate Skills frequency: {cand_skills_count}
+Candidate Skills: {cand_skills_count}
 
-Top Skills Gaps (Demand % minus Supply %):
+Top Skills Gaps:
 {[{'skill': g['skill'], 'gap_percentage_points': g['gapValue']} for g in gaps]}
 
-Write a concise market insights summary covering:
-1. Talent supply-demand dynamics (where is the talent pool dry vs. saturated).
-2. Sourcing recommendations (how to close critical skill gaps).
-3. Talent development advice (what skills current staff or incoming hires should be trained on).
-Keep it under 300 words. Format cleanly with headers or bullets.
+Write a warm, easy-to-understand summary explaining:
+1. What skills are highly sought after vs. which are plentiful.
+2. Friendly tips on how we can bridge these skill gaps.
+3. Simple, encouraging advice on what skills might be worth learning next.
+
+Keep it simple, highly readable, under 300 words.
 """
         expected_schema = {
             "type": "OBJECT",

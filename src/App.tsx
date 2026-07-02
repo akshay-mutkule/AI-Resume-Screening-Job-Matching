@@ -501,13 +501,13 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-sm sm:text-lg font-bold tracking-tight text-slate-900 leading-none">MatchMind <span className="text-blue-600">AI</span></h1>
-            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium tracking-wide mt-0.5 uppercase">RESUME SCREENING & JOB MATCHING</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-semibold tracking-wide mt-0.5 uppercase">Friendly Resume & Job Helper</p>
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-[11px] font-medium text-slate-600 border border-slate-200">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            Gemini NLP Model Enabled
+            Gemini AI is Ready
           </div>
           <button 
             id="open-upload-btn"
@@ -617,7 +617,7 @@ export default function App() {
         
         {/* Sidebar Navigation (Only visible on lg screens and up) */}
         <aside className="hidden lg:flex lg:flex-col lg:w-56 border-r border-slate-200 bg-white p-4 gap-1.5 shrink-0" id="app-sidebar">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Recruitment Workspace</div>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Workspace</div>
           
           <button 
             id="tab-btn-home"
@@ -629,7 +629,7 @@ export default function App() {
             }`}
           >
             <Sparkles className="w-4 h-4 text-blue-500" />
-            Platform Overview (Home)
+            Home Dashboard
           </button>
           
           <button 
@@ -642,7 +642,7 @@ export default function App() {
             }`}
           >
             <Cpu className="w-4 h-4 text-blue-500" />
-            Active Match Matrices
+            Compare Candidates
           </button>
           
           <button 
@@ -655,7 +655,7 @@ export default function App() {
             }`}
           >
             <Briefcase className="w-4 h-4 text-blue-500" />
-            Job Postings ({jobs.length})
+            Job Openings ({jobs.length})
           </button>
           
           <button 
@@ -668,11 +668,11 @@ export default function App() {
             }`}
           >
             <Users className="w-4 h-4 text-blue-500" />
-            Talent Pool ({candidates.length})
+            Candidates ({candidates.length})
           </button>
 
           <div className="border-t border-slate-100 my-2"></div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Advanced AI Analytics</div>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Smart AI Tools</div>
           
           <button 
             id="tab-btn-battle"
@@ -684,7 +684,7 @@ export default function App() {
             }`}
           >
             <Swords className="w-4 h-4 text-blue-500" />
-            Candidate Battle Mode
+            Compare Two Candidates
           </button>
           
           <button 
@@ -697,7 +697,7 @@ export default function App() {
             }`}
           >
             <Wand2 className="w-4 h-4 text-blue-500" />
-            ATS Resume Optimizer
+            Optimize Resume
           </button>
           
           <button 
@@ -713,7 +713,7 @@ export default function App() {
             }`}
           >
             <BarChart3 className="w-4 h-4 text-blue-500" />
-            Market Sourcing Gaps
+            Market Skills & Trends
           </button>
 
 
@@ -748,9 +748,9 @@ export default function App() {
             <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-100 text-[11px] text-blue-800">
               <div className="font-bold mb-1 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-blue-600" />
-                ATS Smart Tip
+                Friendly Tip
               </div>
-              Select a job, select a candidate, then press <strong>Score Match</strong> to test and analyze capability alignment models instantly.
+              Choose a job opening, select a candidate, and click <strong>Score AI Suitability Match</strong> to see how well they fit!
             </div>
           </div>
         </aside>
@@ -762,36 +762,36 @@ export default function App() {
           {activeTab !== "home" && (
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0" id="statistics-cards">
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[100px]">
-                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Target Position</div>
+                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Job Opening</div>
                 <div className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 truncate">
-                  {selectedJob ? selectedJob.title : "No Active Postings"}
+                  {selectedJob ? selectedJob.title : "No Openings Yet"}
                 </div>
                 <div className="text-blue-600 text-[9px] mt-1 font-semibold uppercase tracking-wider">
-                  {selectedJob ? `${selectedJob.requiredSkills.length} Required Skills` : "Define postings"}
+                  {selectedJob ? `${selectedJob.requiredSkills.length} Core Skills` : "Create an opening"}
                 </div>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[100px]">
-                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Candidate Submissions</div>
+                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Candidates</div>
                 <div className="text-xl sm:text-2xl font-black text-slate-900">{candidates.length}</div>
                 <div className="text-green-600 text-[9px] mt-1 font-semibold flex items-center gap-1">
                   <TrendingUp className="w-2.5 h-2.5 animate-pulse" />
-                  Durable SQLite Persistent State
+                  Saved Safely in Database
                 </div>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[100px]">
-                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Avg Similarity Score</div>
+                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Average Fit Score</div>
                 <div className="text-xl sm:text-2xl font-black text-slate-900">{averageMatchScore}</div>
                 <div className="text-slate-500 text-[9px] mt-1 font-semibold">
-                  Cosine Distance / Semantic Indexing
+                  Calculated based on relevant skills
                 </div>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[100px]">
-                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Shortlisted Prospects</div>
+                <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1">Shortlisted</div>
                 <div className="text-xl sm:text-2xl font-black text-amber-600">{shortlistedCount}</div>
-                <div className="text-slate-500 text-[9px] mt-1 font-medium">Ready for immediate interview</div>
+                <div className="text-slate-500 text-[9px] mt-1 font-medium">Ready to contact</div>
               </div>
             </section>
           )}
@@ -811,13 +811,13 @@ export default function App() {
                 
                 <div className="relative z-10 max-w-3xl">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-bold tracking-wider uppercase mb-4 border border-blue-500/20">
-                    <Sparkles className="w-3.5 h-3.5" /> Next-Generation ATS Intelligence
+                    <Sparkles className="w-3.5 h-3.5" /> Smart Resume & Job Helper
                   </span>
                   <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight mb-3">
-                    Streamline Recruitment with Semantic Match Analytics
+                    Find the Perfect Candidate for Your Job Openings
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 font-medium">
-                    Analyze, parse, and score unstructured resumes against your custom job openings with sub-second precision. Powered by Google Gemini AI, MatchMind provides unified skill-gap analysis, academic mapping, and intelligent custom phone-screen interview questions.
+                    Easily check how well any resume fits your job openings. Paste or upload a resume, and our friendly helper will automatically extract skills, show what is missing, and suggest tailored interview questions. It is fast, simple, and easy for everyone to understand!
                   </p>
                   
                   <div className="flex flex-wrap gap-3">
@@ -845,8 +845,8 @@ export default function App() {
 
               {/* Who Can Use This System Section */}
               <div id="home-who-use-section">
-                <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-1">Who can use this project?</h2>
-                <p className="text-xs text-slate-500 mb-4">Leverage instant semantic alignment data across various professional use cases.</p>
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-1">Who is this for?</h2>
+                <p className="text-xs text-slate-500 mb-4">Whether you are hiring or applying, here is how we can help you:</p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
@@ -854,12 +854,12 @@ export default function App() {
                       <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
                         <Users className="w-4 h-4 text-blue-600" />
                       </div>
-                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Recruiters & HR Leads</h3>
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Recruiters & HR Teams</h3>
                       <p className="text-[11px] leading-relaxed text-slate-500 mt-2">
-                        Standardize high volumes of raw applicant profiles. Quickly map candidate credentials to specific technical domains and isolate top-tier profiles.
+                        Easily sort through raw resumes and find the best candidates for your job openings without reading through pages of text.
                       </p>
                     </div>
-                    <div className="text-[10px] text-blue-600 font-bold mt-4">Automate screening process →</div>
+                    <div className="text-[10px] text-blue-600 font-bold mt-4">Save time on screening →</div>
                   </div>
 
                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
@@ -869,10 +869,10 @@ export default function App() {
                       </div>
                       <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Hiring Managers</h3>
                       <p className="text-[11px] leading-relaxed text-slate-500 mt-2">
-                        Assess multidimensional skill alignment models instantly. Identify core missing software stacks or required frameworks before spending time on live interviews.
+                        Instantly see what key skills or tools a candidate has or is missing before you invite them to an interview.
                       </p>
                     </div>
-                    <div className="text-[10px] text-indigo-600 font-bold mt-4">Save engineering time →</div>
+                    <div className="text-[10px] text-indigo-600 font-bold mt-4">Find skills gaps early →</div>
                   </div>
 
                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
@@ -882,10 +882,10 @@ export default function App() {
                       </div>
                       <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Talent Operations</h3>
                       <p className="text-[11px] leading-relaxed text-slate-500 mt-2">
-                        Maintain persistent audit trails of matching scores, interview questions, and shortlist statuses under standard sandbox database registries.
+                        Keep all candidate scores, notes, and custom interview questions organized and saved in one secure, convenient place.
                       </p>
                     </div>
-                    <div className="text-[10px] text-amber-600 font-bold mt-4">Standardize compliance →</div>
+                    <div className="text-[10px] text-amber-600 font-bold mt-4">Stay organized →</div>
                   </div>
 
                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
@@ -893,12 +893,12 @@ export default function App() {
                       <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mb-3">
                         <GraduationCap className="w-4 h-4 text-emerald-600" />
                       </div>
-                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Candidates & Agencies</h3>
+                      <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Candidates & Job Seekers</h3>
                       <p className="text-[11px] leading-relaxed text-slate-500 mt-2">
-                        Test and calibrate resumes against production description tokens. Learn where your portfolio might be filtered out and optimize formatting.
+                        Check how well your own resume matches a job description, see where you can improve, and stand out from the crowd!
                       </p>
                     </div>
-                    <div className="text-[10px] text-emerald-600 font-bold mt-4">Optimize suitability scores →</div>
+                    <div className="text-[10px] text-emerald-600 font-bold mt-4">Improve your resume →</div>
                   </div>
                 </div>
               </div>
@@ -908,8 +908,8 @@ export default function App() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
                   <div>
                     <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded">Interactive Sandbox Feature</span>
-                    <h2 className="text-base font-bold text-slate-900 mt-1">Live Skill-Match Cosine & Jaccard Simulator</h2>
-                    <p className="text-xs text-slate-500">Add or remove skills to see how our math algorithms calculate suitability percentages in real time.</p>
+                    <h2 className="text-base font-bold text-slate-900 mt-1">Live Skill-Matching Simulator</h2>
+                    <p className="text-xs text-slate-500">Add or remove skills to see how our scoring system calculates a match score in real time.</p>
                   </div>
                   
                   {/* Score circle */}
@@ -996,24 +996,24 @@ export default function App() {
                   <div className="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
                     <div>
                       <div className="text-[9px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1">
-                        <Cpu className="w-3 h-3" /> Sandbox Calculation Log
+                        <Cpu className="w-3 h-3" /> Sandbox Scoring Log
                       </div>
                       
                       <div className="mt-3 space-y-2 text-[10.5px]">
                         <div className="flex justify-between border-b border-slate-800 pb-1">
-                          <span className="text-slate-400">Jaccard Intersection:</span>
+                          <span className="text-slate-400">Matched Skills Count:</span>
                           <span className="font-mono text-emerald-400 font-bold">{sandboxIntersection.length} matching</span>
                         </div>
                         <div className="flex justify-between border-b border-slate-800 pb-1">
-                          <span className="text-slate-400">Jaccard Skills Gap:</span>
+                          <span className="text-slate-400">Missing Skills Count:</span>
                           <span className="font-mono text-amber-400 font-bold">{sandboxMissing.length} missing</span>
                         </div>
                         <div className="flex justify-between border-b border-slate-800 pb-1">
-                          <span className="text-slate-400">Jaccard Match Index:</span>
+                          <span className="text-slate-400">Basic Keyword Match:</span>
                           <span className="font-mono text-white font-bold">{Math.round(sandboxJaccardScore)}%</span>
                         </div>
                         <div className="flex justify-between border-b border-slate-800 pb-1">
-                          <span className="text-slate-400">Semantic AI Approximation:</span>
+                          <span className="text-slate-400">AI Meaning Match:</span>
                           <span className="font-mono text-white font-bold">{Math.round(sandboxSemanticProxy)}%</span>
                         </div>
                       </div>
@@ -1021,7 +1021,7 @@ export default function App() {
 
                     <div className="mt-4 pt-3 border-t border-slate-800">
                       <div className="text-[8.5px] font-mono text-slate-500 leading-normal">
-                        SCORE = (0.6 * {Math.round(sandboxJaccardScore)}%) + (0.4 * {Math.round(sandboxSemanticProxy)}%) = <span className="text-indigo-400 font-bold">{sandboxWeightedScore}%</span>
+                        FINAL SCORE = (60% Keyword Weight * {Math.round(sandboxJaccardScore)}%) + (40% Meaning Weight * {Math.round(sandboxSemanticProxy)}%) = <span className="text-indigo-400 font-bold">{sandboxWeightedScore}%</span>
                       </div>
                     </div>
                   </div>
@@ -1089,8 +1089,8 @@ export default function App() {
 
               {/* CORE INTELLIGENT FEATURES CARDS DECK */}
               <div>
-                <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-1">Explore Core Platform Intelligent Features</h2>
-                <p className="text-xs text-slate-500 mb-4">Click any tab above or launch the Recruiter workspace to explore these modules live.</p>
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-1">Explore Our Core Features</h2>
+                <p className="text-xs text-slate-500 mb-4">Click any tab on the sidebar or launch a tool to try them out live!</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
@@ -1098,39 +1098,39 @@ export default function App() {
                     <div>
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">1</div>
-                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Structured LLM Parsing</h3>
+                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Smart Resume Reading</h3>
                       </div>
                       <p className="text-[11px] leading-relaxed text-slate-500">
-                        Unstructured CVs in plain text are compiled server-side by Gemini into highly structured JSON profiles matching Pydantic definitions, extracting standard chronologies, degrees, and emails.
+                        Plain-text resumes are read and understood by Gemini AI. It automatically pulls out key details like contact info, work experience, education, and specific skills.
                       </p>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Module: API /api/analyze-resume</div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Powered by Gemini AI</div>
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">2</div>
-                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Automated Skill Gap Analysis</h3>
+                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Friendly Skills Check</h3>
                       </div>
                       <p className="text-[11px] leading-relaxed text-slate-500">
-                        Compares applicant competencies against job vacancy requirement tokens. Instantly compiles an explicit gap report advising what specific certifications or tools the candidate lacks.
+                        We compare the candidate's skills against your job requirements, helping you see what they are great at and what skills they might need to learn.
                       </p>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Module: Semantic Parser Algorithm</div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Simple Skills Gap Report</div>
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">3</div>
-                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Dynamic Interview Guide</h3>
+                        <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wide">Tailored Interview Questions</h3>
                       </div>
                       <p className="text-[11px] leading-relaxed text-slate-500">
-                        Our model drafts three targeted technical screen questions addressing both the candidate's core background highlights and the job's distinct technology specifications.
+                        Our AI automatically suggests three friendly, custom interview questions to help you start a helpful conversation about their skills.
                       </p>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Module: Gemini NLP Orchestrator</div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400 font-mono">Custom Interview Guides</div>
                   </div>
 
                 </div>
