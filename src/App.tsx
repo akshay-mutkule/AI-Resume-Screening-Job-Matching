@@ -30,6 +30,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { Candidate, JobDescription, MatchReport } from "./types";
+import { InteractiveVenn, TalentQuadrantMatrix, BattleSkillsOverlap } from "./components/InteractiveVisuals";
 
 export default function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -1458,6 +1459,14 @@ export default function App() {
                             </div>
                           </div>
                         </div>
+                        
+                        {/* Interactive Venn Visualizer */}
+                        <InteractiveVenn 
+                          candSkills={selectedCandidate.skills}
+                          jobSkills={selectedJob?.requiredSkills || []}
+                          matched={matchReport.matchedSkills || []}
+                          missing={matchReport.missingSkills || []}
+                        />
 
                         {/* Text Explanation */}
                         {matchReport.explanation && (
@@ -1945,6 +1954,15 @@ export default function App() {
 
                   </div>
 
+                  {/* Battle Overlap Visual Matrix */}
+                  <BattleSkillsOverlap 
+                    cand1Name={compareResult.candidate1Name}
+                    cand2Name={compareResult.candidate2Name}
+                    skillsA={candidates.find(c => c.id === compareCand1Id)?.skills || []}
+                    skillsB={candidates.find(c => c.id === compareCand2Id)?.skills || []}
+                    requiredSkills={jobs.find(j => j.id === compareJobId)?.requiredSkills || []}
+                  />
+
                   {/* Verdict Block */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-5 rounded-xl shadow-sm">
                     <span className="px-2.5 py-1 bg-blue-600 text-white font-black text-[9px] uppercase tracking-wider rounded-full inline-flex items-center gap-1">
@@ -2230,6 +2248,13 @@ export default function App() {
 
               {trendsResult && (
                 <div className="space-y-6 animate-fadeIn" id="trends-results-matrix">
+                  
+                  {/* Interactive Talent Quadrant Matrix Scatter Plot */}
+                  <TalentQuadrantMatrix 
+                    topRequested={trendsResult.topRequestedSkills}
+                    topSupplied={trendsResult.topSuppliedSkills}
+                    supplyDemandGap={trendsResult.supplyDemandGap}
+                  />
                   
                   {/* Supply and Demand Gaps list */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
