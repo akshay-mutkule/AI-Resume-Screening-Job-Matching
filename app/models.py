@@ -1,14 +1,14 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import List, Optional
 
 class CandidateBase(BaseModel):
-    name: str
-    email: str
+    name: Optional[str] = "Candidate"
+    email: Optional[str] = "candidate@example.com"
     phone: Optional[str] = ""
-    skills: List[str] = []
-    predictedRole: str = "Unknown"
+    skills: Optional[List[str]] = []
+    predictedRole: Optional[str] = "Professional"
     source: Optional[str] = "Manual Entry"
-    resumeText: str = ""
+    resumeText: Optional[str] = ""
     score: Optional[int] = None
     lastMatchedJobId: Optional[str] = None
     lastMatchedJobTitle: Optional[str] = None
@@ -21,26 +21,26 @@ class CandidateBase(BaseModel):
     isShortlisted: Optional[bool] = False
 
 class CandidateUpdateShortlist(BaseModel):
-    isShortlisted: bool
+    isShortlisted: bool = False
 
 class JobBase(BaseModel):
-    title: str
-    text: str
-    requiredSkills: List[str] = []
+    title: Optional[str] = ""
+    text: Optional[str] = ""
+    requiredSkills: Optional[List[str]] = []
 
 class AnalyzeResumeRequest(BaseModel):
-    resumeText: str
+    resumeText: Optional[str] = ""
     filename: Optional[str] = "uploaded_resume.txt"
 
 class MatchingRequest(BaseModel):
-    candidateId: str
-    jobId: str
+    candidateId: Optional[str] = ""
+    jobId: Optional[str] = ""
 
 class CompareRequest(BaseModel):
-    candidateId1: str
-    candidateId2: str
-    jobId: str
+    candidateId1: Optional[str] = ""
+    candidateId2: Optional[str] = ""
+    jobId: Optional[str] = ""
 
 class EnhanceRequest(BaseModel):
-    candidateId: str
-    jobId: str
+    candidateId: Optional[str] = ""
+    jobId: Optional[str] = ""

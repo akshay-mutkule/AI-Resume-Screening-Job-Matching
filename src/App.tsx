@@ -66,6 +66,7 @@ export default function App() {
   
   // Loading states
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isPostingJob, setIsPostingJob] = useState(false);
   const [isMatching, setIsMatching] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
   
@@ -231,7 +232,7 @@ export default function App() {
         showNotification("AI Match calculations updated successfully using Gemini NLP Engine!", "success");
       } else {
         const errorData = await res.json();
-        showNotification(errorData.error || "Failed running match analyzer.", "error");
+        showNotification(errorData.error || errorData.detail || "Failed running match analyzer.", "error");
       }
     } catch (error) {
       showNotification("Failed to contact the backend match service.", "error");
@@ -273,7 +274,7 @@ export default function App() {
         showNotification(`AI successfully extracted skills for ${parsedCandidate.name}!`, "success");
       } else {
         const errorData = await res.json();
-        showNotification(errorData.error || "Parser failed to parse inputs.", "error");
+        showNotification(errorData.error || errorData.detail || "Parser failed to parse inputs.", "error");
       }
     } catch (err) {
       console.error(err);
@@ -285,19 +286,24 @@ export default function App() {
 
   const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!jobTitle.trim() || !jobDescription.trim()) {
-      showNotification("Please fill in the Job Title and Description fields", "error");
+    if (!jobTitle.trim() && !jobDescription.trim()) {
+      showNotification("Please fill in at least a Job Title or Job Description", "error");
       return;
     }
 
+    setIsPostingJob(true);
     try {
+      const rawSkills = jobSkills.trim()
+        ? jobSkills.split(",").map(s => s.trim().replace(/\s+/g, " ")).filter(Boolean)
+        : [];
+
       const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: jobTitle,
           text: jobDescription,
-          requiredSkills: jobSkills.split(",").map(s => s.trim().replace(/\s+/g, " "))
+          requiredSkills: rawSkills
         })
       });
 
@@ -305,18 +311,39 @@ export default function App() {
         const newJob: JobDescription = await res.json();
         setJobs(prev => [newJob, ...prev]);
         setSelectedJobId(newJob.id);
+        if (!compareJobId) setCompareJobId(newJob.id);
+        if (!enhanceJobId) setEnhanceJobId(newJob.id);
         
         // Reset inputs
         setJobTitle("");
         setJobDescription("");
         setJobSkills("");
         setShowAddJob(false);
-        showNotification(`New job posting for "${newJob.title}" added to active matching!`, "success");
+        showNotification(`New job posting for "${newJob.title}" saved with ${newJob.requiredSkills.length} extracted skills!`, "success");
       } else {
-        showNotification("Failed creating job opening.", "error");
+        const errorData = await res.json().catch(() => ({ detail: "Failed creating job opening." }));
+        showNotification(errorData.detail || errorData.error || "Failed creating job opening.", "error");
       }
     } catch (err) {
-      showNotification("Error creating job posting.", "error");
+      showNotification("Error creating job posting. Please try again.", "error");
+    } finally {
+      setIsPostingJob(false);
+    }
+  };
+
+  const pasteSampleJob = (type: "ml" | "react" | "devops") => {
+    if (type === "ml") {
+      setJobTitle("Lead AI / ML Research Engineer");
+      setJobSkills("Python, PyTorch, JAX, Transformer, CUDA, Docker, Machine Learning, NLP, FastAPI");
+      setJobDescription("We are seeking a Lead AI / ML Research Engineer to architect, build, and train deep learning models on TPU/GPU clusters. Requirements: 5+ years experience with Python, PyTorch, JAX, Transformer architectures, CUDA kernels, Docker, and RESTful microservices in FastAPI.");
+    } else if (type === "react") {
+      setJobTitle("Senior React Frontend Engineer");
+      setJobSkills("React, TypeScript, Tailwind CSS, Next.js, HTML5, CSS3, Redux, Webpack, Jest");
+      setJobDescription("Looking for a Senior React Frontend Engineer to build high-performance, accessible web interfaces. Requirements: Strong expertise in React 19, TypeScript, Tailwind CSS, Next.js, Redux state management, Jest testing, and modern build pipelines.");
+    } else if (type === "devops") {
+      setJobTitle("Principal Cloud Security & DevOps Engineer");
+      setJobSkills("AWS, Kubernetes, Docker, Terraform, Linux, Python, CI/CD, SQL, Security, IAM");
+      setJobDescription("Seeking a DevOps & Infrastructure Lead to oversee AWS cloud architecture, Kubernetes container orchestration, Infrastructure-as-Code with Terraform, Linux security hardening, and automated CI/CD pipelines.");
     }
   };
 
@@ -2561,8 +2588,38 @@ export default function App() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateJob} className="p-5 flex flex-col gap-4">
+            <form onSubmit={handleCreateJob} className="p-5 flex flex-col gap-4 overflow-y-auto">
               
+              {/* Preset Sample Quick Fills */}
+              <div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wide">
+                  Quick Demo Sample Vacancies (Click to auto-populate):
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => pasteSampleJob("ml")}
+                    className="px-2.5 py-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 rounded border text-[10.5px] font-semibold text-left transition-colors cursor-pointer"
+                  >
+                    🤖 Lead AI Research Eng
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => pasteSampleJob("react")}
+                    className="px-2.5 py-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 rounded border text-[10.5px] font-semibold text-left transition-colors cursor-pointer"
+                  >
+                    ⚛️ Sr. React Frontend Dev
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => pasteSampleJob("devops")}
+                    className="px-2.5 py-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 rounded border text-[10.5px] font-semibold text-left transition-colors cursor-pointer"
+                  >
+                    ☁️ Cloud & DevOps Lead
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
                   Job Position Title:
@@ -2570,17 +2627,16 @@ export default function App() {
                 <input 
                   id="job-title-input"
                   type="text" 
-                  placeholder="e.g. Lead AWS Cloud Security Analyst"
+                  placeholder="e.g. Lead AWS Cloud Security Analyst (Leave blank for AI auto-title)"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
                   className="w-full text-xs border border-slate-300 rounded p-2 focus:ring-1 focus:ring-blue-500 outline-none"
-                  required
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                  Comma-Separated Required Core Skills (CRITICAL for matching):
+                  Comma-Separated Required Skills (Optional - Gemini extracts skills automatically if left blank):
                 </label>
                 <input 
                   id="job-skills-input"
@@ -2591,22 +2647,21 @@ export default function App() {
                   className="w-full text-xs border border-slate-300 rounded p-2 focus:ring-1 focus:ring-blue-500 outline-none font-mono"
                 />
                 <p className="text-[9px] text-slate-400 mt-1">
-                  We use these exact tokens in candidate alignment matrices.
+                  Leave blank to let Gemini AI extract all required skills from the job description automatically!
                 </p>
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                  Full Detailed Job Specifications & Overview:
+                  Full Job Specification & Requirements:
                 </label>
                 <textarea 
                   id="job-desc-input"
                   rows={6}
-                  placeholder="We are looking for a cloud security specialist who has managed enterprise architectures..."
+                  placeholder="Paste job overview, responsibilities, and required qualifications here..."
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   className="w-full text-xs border border-slate-300 rounded p-2 focus:ring-1 focus:ring-blue-500 outline-none"
-                  required
                 ></textarea>
               </div>
 
@@ -2621,9 +2676,19 @@ export default function App() {
                 <button 
                   id="submit-job-btn"
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold cursor-pointer"
+                  disabled={isPostingJob}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
-                  Post Job Opening
+                  {isPostingJob ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Parsing with AI...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" /> Post Job Opening
+                    </>
+                  )}
                 </button>
               </div>
 

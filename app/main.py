@@ -1,4 +1,5 @@
 import time
+import re
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +17,7 @@ from app.gemini import call_gemini_json
 
 app = FastAPI(title="MatchMind AI Python Backend", version="1.0.0")
 
-# Enable CORS of FastAPI
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,6 +25,219 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+KNOWN_SKILLS = [
+    "Python", "PyTorch", "JAX", "TensorFlow", "React", "TypeScript", "JavaScript", "HTML5", "CSS3",
+    "Tailwind CSS", "TailwindCSS", "Tailwind", "Node.js", "Express", "FastAPI", "Flask", "Django",
+    "Git", "Docker", "Kubernetes", "AWS", "GCP", "Azure", "SQL", "PostgreSQL", "MongoDB", "NoSQL",
+    "Linux", "Agile", "Jira", "Figma", "Machine Learning", "Deep Learning", "NLP", "Transformer",
+    "CUDA", "C++", "C#", "Java", "Go", "Rust", "Redux", "Next.js", "Webpack", "Jest", "WAI-ARIA",
+    "Product Specifications", "Analytics", "Roadmaps", "Communication", "Scrum", "CI/CD", "REST API",
+    "GraphQL", "Microservices", "Data Science", "Tableau", "Pandas", "NumPy", "Scikit-Learn", "Keras",
+    "Security", "IAM", "Terraform", "Cloud Architecture"
+]
+
+def fallback_extract_resume(resume_text: str, filename: str) -> dict:
+    lines = [line.strip() for line in resume_text.splitlines() if line.strip()]
+    
+    # 1. Name extraction
+    name = "Candidate"
+    for line in lines[:6]:
+        if "@" in line or "http" in line or ":" in line:
+            continue
+        clean_line = re.sub(r'(?i)\b(curriculum vitae|cv|resume|dr\.|mr\.|ms\.|phd|md)\b', '', line).strip()
+        words = clean_line.split()
+        if 1 <= len(words) <= 4 and all(w[0].isupper() or w[0].isalpha() for w in words if w):
+            name = clean_line
+            break
+            
+    if (name == "Candidate" or len(name) < 2) and filename:
+        base = filename.split('.')[0]
+        parts = [p.capitalize() for p in re.split(r'[-_]', base) if p.lower() not in ['cv', 'resume', 'txt', 'pdf', 'doc']]
+        if parts:
+            name = " ".join(parts)
+
+    # 2. Email
+    email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', resume_text)
+    email = email_match.group(0) if email_match else "candidate@example.com"
+
+    # 3. Phone
+    phone_match = re.search(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', resume_text)
+    phone = phone_match.group(0) if phone_match else ""
+
+    # 4. Skills
+    found_skills = []
+    text_lower = resume_text.lower()
+    for skill in KNOWN_SKILLS:
+        pattern = r'\b' + re.escape(skill.lower()) + r'\b'
+        if re.search(pattern, text_lower):
+            if skill not in found_skills:
+                found_skills.append(skill)
+            
+    skills_line_match = re.search(r'(?i)skills?\s*[:\-]\s*(.*)', resume_text)
+    if skills_line_match:
+        custom_skills = [s.strip() for s in re.split(r'[,|;]', skills_line_match.group(1)) if s.strip()]
+        for s in custom_skills:
+            if s and s not in found_skills and len(s) < 30:
+                found_skills.append(s)
+
+    if not found_skills:
+        found_skills = ["Software Development", "Problem Solving", "Technical Communication"]
+
+    # 5. Predicted Role
+    predicted_role = "Software Professional"
+    if any(s in found_skills for s in ["PyTorch", "JAX", "TensorFlow", "Machine Learning", "NLP", "CUDA"]):
+        predicted_role = "AI/ML Engineer & Researcher"
+    elif any(s in found_skills for s in ["React", "TypeScript", "Tailwind CSS", "HTML5", "Next.js", "CSS3"]):
+        predicted_role = "React Frontend Specialist"
+    elif any(s in found_skills for s in ["Jira", "Agile", "Product Specifications", "Roadmaps"]):
+        predicted_role = "Technical Product Manager"
+    elif any(s in found_skills for s in ["AWS", "Docker", "Kubernetes", "Linux", "Terraform"]):
+        predicted_role = "Cloud Infrastructure Specialist"
+    elif any(s in found_skills for s in ["Python", "FastAPI", "Node.js", "Django", "SQL"]):
+        predicted_role = "Backend Software Engineer"
+
+    # 6. Experience Summary
+    exp_summary = "Experienced professional with background in " + ", ".join(found_skills[:5]) + "."
+    exp_match = re.search(r'(?i)(experience|work history|summary)\s*[:\-]?\s*(.*)', resume_text, re.DOTALL)
+    if exp_match:
+        raw_exp = exp_match.group(2).strip()
+        first_p = raw_exp.split('\n\n')[0].replace('\n', ' ')
+        if len(first_p) > 20:
+            exp_summary = first_p[:300] + ("..." if len(first_p) > 300 else "")
+
+    # 7. Education
+    edu = "Bachelor's Degree in Computer Science or Related Technical Field"
+    edu_match = re.search(r'(?i)(b\.?s\.?|m\.?s\.?|ph\.?d\.?|bachelor|master|degree|university|college)[^\n]*', resume_text)
+    if edu_match:
+        edu = edu_match.group(0).strip()
+
+    return {
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "skills": found_skills,
+        "predictedRole": predicted_role,
+        "experienceSummary": exp_summary,
+        "education": edu
+    }
+
+def fallback_extract_job(job_text: str, user_title: str = "") -> dict:
+    text_lower = job_text.lower()
+    found_skills = []
+    for skill in KNOWN_SKILLS:
+        pattern = r'\b' + re.escape(skill.lower()) + r'\b'
+        if re.search(pattern, text_lower):
+            if skill not in found_skills:
+                found_skills.append(skill)
+                
+    title = user_title.strip() if user_title else ""
+    if not title:
+        first_line = job_text.split('\n')[0].strip()
+        if len(first_line) < 60 and len(first_line) > 3:
+            title = first_line
+        else:
+            if any(s in found_skills for s in ["PyTorch", "Machine Learning", "NLP"]):
+                title = "AI / Machine Learning Engineer"
+            elif any(s in found_skills for s in ["React", "TypeScript", "Tailwind CSS"]):
+                title = "Frontend Web Engineer"
+            elif any(s in found_skills for s in ["AWS", "Docker", "Kubernetes", "Linux"]):
+                title = "Cloud & DevOps Specialist"
+            else:
+                title = "Software Engineer Position"
+
+    return {
+        "title": title,
+        "requiredSkills": found_skills
+    }
+
+def fallback_match(cand: dict, job: dict) -> dict:
+    cand_skills = cand.get("skills", [])
+    job_skills = job.get("requiredSkills", [])
+    
+    cand_skills_lower = [s.lower() for s in cand_skills]
+    matched = [s for s in job_skills if s.lower() in cand_skills_lower]
+    missing = [s for s in job_skills if s.lower() not in cand_skills_lower]
+    
+    if job_skills:
+        score = int(round((len(matched) / len(job_skills)) * 100))
+    else:
+        score = 80
+        
+    score = max(35, min(98, score))
+    
+    explanation = f"{cand.get('name')} shows strong alignment with the {job.get('title')} role, bringing key expertise in {', '.join(matched[:4]) if matched else 'core technical fields'}."
+    gap = f"Skill gaps to consider: {', '.join(missing) if missing else 'None! All core requested skills are present in candidate profile.'}"
+    questions = [
+        f"How have you applied your experience with {matched[0]} in your recent projects?" if matched else "Can you walk us through your most relevant technical project?",
+        f"What steps are you taking to build proficiency in {missing[0]}?" if missing else "How do you keep your technical skills sharp?",
+        f"What drew you to applying for the {job.get('title')} position?"
+    ]
+    
+    return {
+        "score": score,
+        "matchedSkills": matched,
+        "missingSkills": missing,
+        "explanation": explanation,
+        "gapAnalysis": gap,
+        "interviewQuestions": questions
+    }
+
+def fallback_compare(cand1: dict, cand2: dict, job: dict) -> dict:
+    m1 = fallback_match(cand1, job)
+    m2 = fallback_match(cand2, job)
+    
+    scoreA = m1["score"]
+    scoreB = m2["score"]
+    
+    if scoreA >= scoreB:
+        verdict = f"{cand1.get('name')} holds an edge for {job.get('title')} due to broader coverage of key requested skills."
+        diff = f"{cand1.get('name')} brings {scoreA}% match score vs {cand2.get('name')}'s {scoreB}%."
+    else:
+        verdict = f"{cand2.get('name')} holds an edge for {job.get('title')} with higher skill alignment."
+        diff = f"{cand2.get('name')} brings {scoreB}% match score vs {cand1.get('name')}'s {scoreA}%."
+        
+    return {
+        "scoreA": scoreA,
+        "scoreB": scoreB,
+        "comparisonPoints": [
+            {
+                "category": "Core Technical Match",
+                "candAFeedback": f"Matches {len(m1['matchedSkills'])} required skills ({', '.join(m1['matchedSkills'][:3]) or 'General background'}).",
+                "candBFeedback": f"Matches {len(m2['matchedSkills'])} required skills ({', '.join(m2['matchedSkills'][:3]) or 'General background'})."
+            },
+            {
+                "category": "Skill Gaps & Vulnerabilities",
+                "candAFeedback": f"Missing: {', '.join(m1['missingSkills'][:3]) or 'None'}.",
+                "candBFeedback": f"Missing: {', '.join(m2['missingSkills'][:3]) or 'None'}."
+            }
+        ],
+        "strengthsA": m1["matchedSkills"] or [cand1.get("predictedRole")],
+        "strengthsB": m2["matchedSkills"] or [cand2.get("predictedRole")],
+        "gapsA": m1["missingSkills"],
+        "gapsB": m2["missingSkills"],
+        "verdict": verdict,
+        "keyDifferentiator": diff
+    }
+
+def fallback_enhance(cand: dict, job: dict) -> dict:
+    m = fallback_match(cand, job)
+    orig_sum = cand.get("experienceSummary") or f"Experienced {cand.get('predictedRole')}."
+    enh_sum = f"Driven {cand.get('predictedRole')} with expertise in {', '.join(cand.get('skills', [])[:5])}, seeking to leverage strong skills for {job.get('title')}."
+    
+    return {
+        "originalSummary": orig_sum,
+        "enhancedSummary": enh_sum,
+        "suggestedSkillsToAdd": m["missingSkills"] or ["Cloud Architecture", "Agile Leadership"],
+        "bulletOptimizations": [
+            {
+                "originalBullet": "Worked on technical projects and developed features.",
+                "suggestedBullet": f"Architected and delivered high-impact software solutions leveraging {', '.join(cand.get('skills', [])[:3])}, improving performance by 25%.",
+                "rationale": "Quantifies achievements and highlights key target technical skills."
+            }
+        ],
+        "resumeCritique": "Overall strong background. Emphasizing measurable metrics and explicit technical terms will boost ATS ranking for this position."
+    }
 
 @app.get("/api/health")
 def health_check():
@@ -42,7 +256,6 @@ def add_manual_candidate(candidate: CandidateBase):
     new_candidate["id"] = new_id
     new_candidate["createdAt"] = datetime.utcnow().isoformat() + "Z"
     
-    # Prepend to mimic our unshift list ordering
     if "candidates" not in db:
         db["candidates"] = []
     db["candidates"].insert(0, new_candidate)
@@ -90,13 +303,55 @@ def list_jobs():
 def add_job_position(job: JobBase):
     db = load_db()
     new_id = f"job-{int(time.time() * 1000)}"
-    clean_skills = [s.strip() for s in job.requiredSkills if s.strip()]
+    user_skills = [s.strip() for s in job.requiredSkills if s.strip()]
     
+    extracted_title = job.title.strip() if job.title else ""
+    extracted_skills = list(user_skills)
+
+    if job.text and job.text.strip():
+        system_prompt = "You are an expert HR talent acquisition parser. Extract the clean job title and key required technical and professional skills from the job description."
+        prompt = f"""Extract the official job title and a list of required technical/professional skills from this job description text:
+User Provided Title: "{job.title}"
+Job Description:
+{job.text}
+"""
+        expected_schema = {
+            "type": "OBJECT",
+            "properties": {
+                "title": { "type": "STRING" },
+                "requiredSkills": {
+                    "type": "ARRAY",
+                    "items": { "type": "STRING" }
+                }
+            },
+            "required": ["title", "requiredSkills"]
+        }
+        
+        try:
+            parsed = call_gemini_json(prompt, system_prompt, expected_schema)
+            if not extracted_title and parsed.get("title"):
+                extracted_title = parsed.get("title").strip()
+            ai_skills = [s.strip() for s in parsed.get("requiredSkills", []) if s.strip()]
+            for s in ai_skills:
+                if not any(s.lower() == existing.lower() for existing in extracted_skills):
+                    extracted_skills.append(s)
+        except Exception as e:
+            print(f"Notice: Gemini job parsing skipped or failed ({e}), using NLP fallback.")
+            fb = fallback_extract_job(job.text, extracted_title)
+            if not extracted_title:
+                extracted_title = fb.get("title", "Software Opening")
+            for s in fb.get("requiredSkills", []):
+                if not any(s.lower() == existing.lower() for existing in extracted_skills):
+                    extracted_skills.append(s)
+
+    if not extracted_title:
+        extracted_title = "Untitled Job Opening"
+
     new_job = {
         "id": new_id,
-        "title": job.title or "Untitled Job Opening",
+        "title": extracted_title,
         "text": job.text or "",
-        "requiredSkills": clean_skills,
+        "requiredSkills": extracted_skills,
         "createdAt": datetime.utcnow().isoformat() + "Z"
     }
     
@@ -151,31 +406,31 @@ Resume text:
 
     try:
         parsed_json = call_gemini_json(prompt, system_prompt, expected_schema)
-        
-        db = load_db()
-        new_candidate = {
-            "id": f"cand-{int(time.time() * 1000)}",
-            "name": parsed_json.get("name", "Candidate"),
-            "email": parsed_json.get("email", "info@example.com"),
-            "phone": parsed_json.get("phone", ""),
-            "skills": parsed_json.get("skills", []),
-            "predictedRole": parsed_json.get("predictedRole", "Software Professional"),
-            "source": req.filename or "Pasted Text",
-            "resumeText": req.resumeText,
-            "experienceSummary": parsed_json.get("experienceSummary", ""),
-            "education": parsed_json.get("education", ""),
-            "createdAt": datetime.utcnow().isoformat() + "Z",
-            "isShortlisted": False
-        }
-        
-        if "candidates" not in db:
-            db["candidates"] = []
-        db["candidates"].insert(0, new_candidate)
-        save_db(db)
-        return new_candidate
-        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Notice: Gemini LLM call skipped or failed ({e}), using NLP Rule Engine.")
+        parsed_json = fallback_extract_resume(req.resumeText, req.filename or "")
+
+    db = load_db()
+    new_candidate = {
+        "id": f"cand-{int(time.time() * 1000)}",
+        "name": parsed_json.get("name") or "Candidate",
+        "email": parsed_json.get("email") or "info@example.com",
+        "phone": parsed_json.get("phone") or "",
+        "skills": parsed_json.get("skills") or [],
+        "predictedRole": parsed_json.get("predictedRole") or "Software Professional",
+        "source": req.filename or "Pasted Text",
+        "resumeText": req.resumeText,
+        "experienceSummary": parsed_json.get("experienceSummary") or "",
+        "education": parsed_json.get("education") or "",
+        "createdAt": datetime.utcnow().isoformat() + "Z",
+        "isShortlisted": False
+    }
+    
+    if "candidates" not in db:
+        db["candidates"] = []
+    db["candidates"].insert(0, new_candidate)
+    save_db(db)
+    return new_candidate
 
 @app.post("/api/match")
 def match_candidate_job(req: MatchingRequest):
@@ -238,35 +493,36 @@ Target Job Spec Description:
 
     try:
         report = call_gemini_json(prompt, system_prompt, expected_schema)
-        
-        # update candidate history matching variables
-        for c in candidates:
-            if c.get("id") == req.candidateId:
-                c["score"] = report.get("score")
-                c["lastMatchedJobId"] = req.jobId
-                c["lastMatchedJobTitle"] = job.get("title")
-                c["lastMatchAt"] = datetime.utcnow().isoformat() + "Z"
-                c["explanation"] = report.get("explanation")
-                c["matchedSkills"] = report.get("matchedSkills")
-                c["missingSkills"] = report.get("missingSkills")
-                break
-                
-        db["candidates"] = candidates
-        save_db(db)
-        
-        return {
-            "candidateId": req.candidateId,
-            "jobId": req.jobId,
-            "score": report.get("score"),
-            "predictedRole": cand.get("predictedRole"),
-            "explanation": report.get("explanation"),
-            "matchedSkills": report.get("matchedSkills"),
-            "missingSkills": report.get("missingSkills"),
-            "gapAnalysis": report.get("gapAnalysis"),
-            "interviewQuestions": report.get("interviewQuestions")
-        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Notice: Gemini LLM call skipped or failed ({e}), using NLP fallback match.")
+        report = fallback_match(cand, job)
+        
+    # update candidate history matching variables
+    for c in candidates:
+        if c.get("id") == req.candidateId:
+            c["score"] = report.get("score")
+            c["lastMatchedJobId"] = req.jobId
+            c["lastMatchedJobTitle"] = job.get("title")
+            c["lastMatchAt"] = datetime.utcnow().isoformat() + "Z"
+            c["explanation"] = report.get("explanation")
+            c["matchedSkills"] = report.get("matchedSkills")
+            c["missingSkills"] = report.get("missingSkills")
+            break
+            
+    db["candidates"] = candidates
+    save_db(db)
+    
+    return {
+        "candidateId": req.candidateId,
+        "jobId": req.jobId,
+        "score": report.get("score"),
+        "predictedRole": cand.get("predictedRole"),
+        "explanation": report.get("explanation"),
+        "matchedSkills": report.get("matchedSkills"),
+        "missingSkills": report.get("missingSkills"),
+        "gapAnalysis": report.get("gapAnalysis"),
+        "interviewQuestions": report.get("interviewQuestions")
+    }
 
 @app.post("/api/compare")
 def compare_candidates(req: CompareRequest):
@@ -339,17 +595,19 @@ Resume Text: {cand2.get('resumeText')}
     
     try:
         report = call_gemini_json(prompt, system_prompt, expected_schema)
-        return {
-            "candidate1Id": req.candidateId1,
-            "candidate2Id": req.candidateId2,
-            "candidate1Name": cand1.get("name"),
-            "candidate2Name": cand2.get("name"),
-            "jobId": req.jobId,
-            "jobTitle": job.get("title"),
-            **report
-        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Notice: Gemini LLM call skipped or failed ({e}), using NLP fallback compare.")
+        report = fallback_compare(cand1, cand2, job)
+
+    return {
+        "candidate1Id": req.candidateId1,
+        "candidate2Id": req.candidateId2,
+        "candidate1Name": cand1.get("name"),
+        "candidate2Name": cand2.get("name"),
+        "jobId": req.jobId,
+        "jobTitle": job.get("title"),
+        **report
+    }
 
 @app.post("/api/enhance")
 def enhance_resume(req: EnhanceRequest):
@@ -406,15 +664,17 @@ Resume Text: {cand.get('resumeText')}
     
     try:
         report = call_gemini_json(prompt, system_prompt, expected_schema)
-        return {
-            "candidateId": req.candidateId,
-            "candidateName": cand.get("name"),
-            "jobId": req.jobId,
-            "jobTitle": job.get("title"),
-            **report
-        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Notice: Gemini LLM call skipped or failed ({e}), using NLP fallback enhance.")
+        report = fallback_enhance(cand, job)
+
+    return {
+        "candidateId": req.candidateId,
+        "candidateName": cand.get("name"),
+        "jobId": req.jobId,
+        "jobTitle": job.get("title"),
+        **report
+    }
 
 @app.get("/api/skills-trend")
 def skills_trend_analysis():
@@ -422,7 +682,6 @@ def skills_trend_analysis():
     candidates = db.get("candidates", [])
     jobs = db.get("jobs", [])
     
-    # Simple Python aggregation
     job_skills_count = {}
     total_jobs = len(jobs)
     for j in jobs:
@@ -439,7 +698,6 @@ def skills_trend_analysis():
             if skill_clean:
                 cand_skills_count[skill_clean] = cand_skills_count.get(skill_clean, 0) + 1
                 
-    # Format the stats
     top_requested = []
     for skill, count in sorted(job_skills_count.items(), key=lambda x: x[1], reverse=True):
         top_requested.append({
@@ -456,7 +714,6 @@ def skills_trend_analysis():
             "supplyPercentage": round((count / total_candidates) * 100, 1) if total_candidates > 0 else 0
         })
         
-    # Calculate gap (required skills that candidates don't have enough of)
     gaps = []
     all_req_skills = set(job_skills_count.keys())
     for skill in all_req_skills:
@@ -471,7 +728,6 @@ def skills_trend_analysis():
         })
     gaps = sorted(gaps, key=lambda x: x["gapValue"], reverse=True)[:10]
     
-    # Generate an intelligent AI Market Narrative
     if not jobs or not candidates:
         ai_narrative = "Please add some job openings and upload candidate resumes to build your friendly skills gap report!"
     else:
@@ -509,7 +765,7 @@ Keep it simple, highly readable, under 300 words.
             ai_report = call_gemini_json(prompt, system_prompt, expected_schema)
             ai_narrative = ai_report.get("insights", "") + "\n\n**Actionable Recommendation:** " + ai_report.get("recommendation", "")
         except Exception:
-            ai_narrative = "Analysis completed. Significant demand found for " + ", ".join(all_req_skills) + ". Sourcing focus recommended for the highest gap skills."
+            ai_narrative = "Analysis completed. Significant demand found for " + ", ".join(list(all_req_skills)[:5]) + ". Sourcing focus recommended for the highest gap skills."
             
     return {
         "topRequestedSkills": top_requested[:10],
@@ -517,4 +773,3 @@ Keep it simple, highly readable, under 300 words.
         "supplyDemandGap": gaps,
         "aiMarketNarrative": ai_narrative
     }
-

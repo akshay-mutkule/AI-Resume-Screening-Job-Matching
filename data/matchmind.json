@@ -1,0 +1,155 @@
+{
+  "candidates": [
+    {
+      "id": "cand-1785317056796",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "",
+      "skills": [
+        "React",
+        "Node.js"
+      ],
+      "predictedRole": "Frontend Web Developer",
+      "source": "Pasted Text",
+      "resumeText": "John Doe\nSoftware Engineer with React and Node.js experience.\nEmail: john@example.com",
+      "experienceSummary": "2 core competencies detected. Solid technical candidate with strong alignment for modern software roles.",
+      "education": "Degree in Computer Science or technical background",
+      "isShortlisted": false,
+      "createdAt": "2026-07-29T09:24:16.796Z"
+    },
+    {
+      "id": "cand-1",
+      "name": "Alexander Mercer",
+      "email": "alex.mercer@gmail.com",
+      "phone": "+1 (555) 349-9281",
+      "skills": [
+        "Python",
+        "PyTorch",
+        "TensorFlow",
+        "scikit-learn",
+        "FastAPI",
+        "SQL",
+        "Docker",
+        "Git",
+        "Machine Learning",
+        "NLP"
+      ],
+      "predictedRole": "AI Engineer",
+      "source": "alex_mercer_cv.pdf",
+      "resumeText": "Alexander Mercer\nAI Engineer & Machine Learning Specialist with 4+ years building neural networks, LLM agents, and high-performance REST APIs.",
+      "score": 98,
+      "lastMatchedJobId": "job-1",
+      "lastMatchedJobTitle": "Lead AI Engineer",
+      "lastMatchAt": "2026-07-29T09:24:19.326Z",
+      "explanation": "Alexander Mercer matches 10 out of 10 requested skills for Lead AI Engineer. Solid foundation for this position.",
+      "matchedSkills": [
+        "Python",
+        "PyTorch",
+        "TensorFlow",
+        "scikit-learn",
+        "FastAPI",
+        "SQL",
+        "Docker",
+        "Git",
+        "Machine Learning",
+        "NLP"
+      ],
+      "missingSkills": [],
+      "experienceSummary": "4+ years experience engineering AI pipelines and microservices.",
+      "education": "M.S. in Computer Science - Stanford University",
+      "isShortlisted": true,
+      "createdAt": "2026-07-29T09:24:07.325Z"
+    },
+    {
+      "id": "cand-2",
+      "name": "Sarah Jenkins",
+      "email": "sarah.j.code@yahoo.com",
+      "phone": "+1 (555) 832-1100",
+      "skills": [
+        "React",
+        "TypeScript",
+        "Node.js",
+        "Express",
+        "HTML5",
+        "CSS3",
+        "Tailwind CSS",
+        "Redux",
+        "Git",
+        "Jest"
+      ],
+      "predictedRole": "Frontend Developer",
+      "source": "sarah_jenkins_web.txt",
+      "resumeText": "Sarah Jenkins\nSenior Frontend Engineer specializing in React 19, TypeScript, and modern responsive web architectures.",
+      "score": 87,
+      "lastMatchedJobId": "job-2",
+      "lastMatchedJobTitle": "Senior Full Stack Dev",
+      "lastMatchAt": "2026-07-29T09:24:07.325Z",
+      "explanation": "Sarah exhibits strong frontend expertise with React and TypeScript.",
+      "matchedSkills": [
+        "React",
+        "TypeScript",
+        "Node.js",
+        "Express",
+        "Git"
+      ],
+      "missingSkills": [
+        "Python",
+        "SQL",
+        "Docker",
+        "AWS",
+        "FastAPI"
+      ],
+      "experienceSummary": "3+ years designing accessible, high-speed single page applications.",
+      "education": "B.S. in Computer Information Systems - Georgia Tech",
+      "isShortlisted": false,
+      "createdAt": "2026-07-29T09:24:07.325Z"
+    }
+  ],
+  "jobs": [
+    {
+      "id": "job-1785317053176",
+      "title": "Backend Developer",
+      "text": "Looking for Python and SQL dev",
+      "requiredSkills": [
+        "Python",
+        "SQL"
+      ],
+      "createdAt": "2026-07-29T09:24:13.176Z"
+    },
+    {
+      "id": "job-1",
+      "title": "Lead AI Engineer",
+      "text": "We are seeking a Lead AI Engineer to architect, build, and deploy NLP extraction pipelines and microservices in FastAPI and Docker.",
+      "requiredSkills": [
+        "Python",
+        "PyTorch",
+        "TensorFlow",
+        "scikit-learn",
+        "FastAPI",
+        "SQL",
+        "Docker",
+        "Git",
+        "Machine Learning",
+        "NLP"
+      ],
+      "createdAt": "2026-07-29T09:24:07.325Z"
+    },
+    {
+      "id": "job-2",
+      "title": "Senior Full Stack Dev",
+      "text": "We are looking for a Senior Developer who loves crafting clean frontend components in React, TypeScript, and backend APIs in Python.",
+      "requiredSkills": [
+        "Python",
+        "SQL",
+        "React",
+        "Docker",
+        "AWS",
+        "Git",
+        "FastAPI",
+        "TypeScript",
+        "REST API"
+      ],
+      "createdAt": "2026-07-29T09:24:07.325Z"
+    }
+  ]
+}
