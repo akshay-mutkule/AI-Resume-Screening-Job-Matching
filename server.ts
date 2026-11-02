@@ -47,6 +47,7 @@ interface Candidate {
   education?: string;
   isShortlisted: boolean;
   createdAt: string;
+  pipelineStage?: "sourced" | "screened" | "interview" | "team_match" | "offer" | "hired";
   radarMetrics?: {
     hardSkills: number;
     experienceDepth: number;
@@ -92,6 +93,7 @@ const DEFAULT_DEMO_CANDIDATES: Candidate[] = [
     experienceSummary: "5+ years leading AI development teams, fine-tuning open-source LLMs, and optimizing model inference latency by 45%.",
     education: "M.S. in Computer Science (AI Specialization) - Stanford University",
     isShortlisted: true,
+    pipelineStage: "offer",
     createdAt: new Date().toISOString(),
     radarMetrics: {
       hardSkills: 98,
@@ -121,6 +123,7 @@ const DEFAULT_DEMO_CANDIDATES: Candidate[] = [
     experienceSummary: "4 years engineering scalable design systems, optimizing Web Vitals, and integrating micro-frontends.",
     education: "B.S. in Computer Information Systems - Georgia Tech",
     isShortlisted: true,
+    pipelineStage: "interview",
     createdAt: new Date().toISOString(),
     radarMetrics: {
       hardSkills: 92,
@@ -150,6 +153,7 @@ const DEFAULT_DEMO_CANDIDATES: Candidate[] = [
     experienceSummary: "6+ years reducing cloud infrastructure costs by 35% while maintaining 99.99% multi-region uptime.",
     education: "B.S. in Electrical & Computer Engineering - UC Berkeley",
     isShortlisted: true,
+    pipelineStage: "team_match",
     createdAt: new Date().toISOString(),
     radarMetrics: {
       hardSkills: 96,
@@ -179,6 +183,7 @@ const DEFAULT_DEMO_CANDIDATES: Candidate[] = [
     experienceSummary: "4+ years driving product growth through experimentation frameworks, causal inference, and automated ML pipelines.",
     education: "Ph.D. in Applied Statistics & Econometrics - University of Michigan",
     isShortlisted: false,
+    pipelineStage: "screened",
     createdAt: new Date().toISOString(),
     radarMetrics: {
       hardSkills: 91,
@@ -208,6 +213,7 @@ const DEFAULT_DEMO_CANDIDATES: Candidate[] = [
     experienceSummary: "5+ years directing product strategy, reducing sprint cycle time by 25%, and launching AI-powered search features.",
     education: "B.A. in Economics & Computer Science - Northwestern University",
     isShortlisted: false,
+    pipelineStage: "sourced",
     createdAt: new Date().toISOString(),
     radarMetrics: {
       hardSkills: 75,
@@ -276,6 +282,24 @@ function ensureDB(): DB {
     const parsed = JSON.parse(raw);
     if (!parsed.candidates || parsed.candidates.length === 0) {
       parsed.candidates = DEFAULT_DEMO_CANDIDATES;
+    } else {
+      let migrated = false;
+      const stageMap: Record<string, "sourced" | "screened" | "interview" | "team_match" | "offer" | "hired"> = {
+        "cand-1": "offer",
+        "cand-2": "interview",
+        "cand-3": "team_match",
+        "cand-4": "screened",
+        "cand-5": "sourced"
+      };
+      for (const c of parsed.candidates) {
+        if (!c.pipelineStage) {
+          c.pipelineStage = stageMap[c.id] || (c.isShortlisted ? "interview" : "screened");
+          migrated = true;
+        }
+      }
+      if (migrated) {
+        saveDB(parsed);
+      }
     }
     if (!parsed.jobs || parsed.jobs.length === 0) {
       parsed.jobs = DEFAULT_DEMO_JOBS;
@@ -649,6 +673,24 @@ app.patch("/api/candidates/:id/shortlist", (req, res) => {
     return res.status(404).json({ detail: "Candidate not found" });
   }
   cand.isShortlisted = Boolean(isShortlisted);
+  saveDB(db);
+  res.json(cand);
+});
+
+// 4b. Update Candidate Pipeline Stage
+app.patch("/api/candidates/:id/stage", (req, res) => {
+  const db = ensureDB();
+  const { id } = req.params;
+  const { stage } = req.body;
+  const cand = db.candidates.find(c => c.id === id);
+  if (!cand) {
+    return res.status(404).json({ detail: "Candidate not found" });
+  }
+  const allowed = ["sourced", "screened", "interview", "team_match", "offer", "hired"];
+  if (!allowed.includes(stage)) {
+    return res.status(400).json({ detail: "Invalid pipeline stage" });
+  }
+  cand.pipelineStage = stage;
   saveDB(db);
   res.json(cand);
 });
@@ -1333,6 +1375,344 @@ app.post("/api/seed-demo-data", (req, res) => {
   };
   saveDB(newDB);
   res.json({ message: "Successfully seeded rich demo profiles and job vacancies!", data: newDB });
+});
+
+// 19. AI Compensation & Market Salary Benchmark Estimator
+app.post("/api/salary-benchmark", async (req, res) => {
+  const db = ensureDB();
+  const { candidateId, jobId, roleTitle, experienceLevel } = req.body || {};
+  const cand = db.candidates.find(c => c.id === candidateId);
+  const job = db.jobs.find(j => j.id === jobId);
+
+  const targetTitle = roleTitle || job?.title || cand?.predictedRole || "Senior Software Engineer";
+  const targetLevel = experienceLevel || job?.experienceLevel || "Senior (4-7 years)";
+  const skillsList = cand?.skills || job?.requiredSkills || ["TypeScript", "Python", "Cloud"];
+
+  const systemPrompt = "You are an Executive Tech Compensation Partner at a top tier talent firm. Return a calibrated compensation benchmark with market percentiles, equity ranges, geo tiers, and strategic candidate negotiation leverage.";
+  const prompt = `Role Title: "${targetTitle}"\nExperience Level: "${targetLevel}"\nKey Technical Competencies: ${JSON.stringify(skillsList)}`;
+
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      roleTitle: { type: "STRING" },
+      experienceLevel: { type: "STRING" },
+      baseSalary: {
+        type: "OBJECT",
+        properties: {
+          p25: { type: "INTEGER" },
+          median: { type: "INTEGER" },
+          p75: { type: "INTEGER" },
+          p90: { type: "INTEGER" }
+        },
+        required: ["p25", "median", "p75", "p90"]
+      },
+      estimatedEquityRange: { type: "STRING" },
+      estimatedTargetBonus: { type: "STRING" },
+      totalCompMedian: { type: "INTEGER" },
+      geoTiers: {
+        type: "OBJECT",
+        properties: {
+          tier1: { type: "STRING" },
+          tier2: { type: "STRING" },
+          tier3: { type: "STRING" }
+        },
+        required: ["tier1", "tier2", "tier3"]
+      },
+      marketRarityMultiplier: { type: "NUMBER" },
+      marketRarityComment: { type: "STRING" },
+      negotiationPointers: { type: "ARRAY", items: { type: "STRING" } }
+    },
+    required: ["roleTitle", "experienceLevel", "baseSalary", "estimatedEquityRange", "estimatedTargetBonus", "totalCompMedian", "geoTiers", "marketRarityMultiplier", "marketRarityComment", "negotiationPointers"]
+  };
+
+  try {
+    const benchmark = await callGeminiJson(prompt, systemPrompt, schema);
+    res.json(benchmark);
+  } catch {
+    // Algorithmic market benchmark fallback
+    let medianBase = 168000;
+    const titleLower = targetTitle.toLowerCase();
+    if (titleLower.includes("ai") || titleLower.includes("llm") || titleLower.includes("machine learning")) {
+      medianBase = 210000;
+    } else if (titleLower.includes("devops") || titleLower.includes("cloud") || titleLower.includes("architect")) {
+      medianBase = 188000;
+    } else if (titleLower.includes("full stack") || titleLower.includes("frontend")) {
+      medianBase = 165000;
+    } else if (titleLower.includes("product")) {
+      medianBase = 175000;
+    }
+
+    const p25 = Math.round(medianBase * 0.88 / 1000) * 1000;
+    const p75 = Math.round(medianBase * 1.15 / 1000) * 1000;
+    const p90 = Math.round(medianBase * 1.30 / 1000) * 1000;
+    const totalComp = Math.round(medianBase * 1.35 / 1000) * 1000;
+
+    res.json({
+      roleTitle: targetTitle,
+      experienceLevel: targetLevel,
+      baseSalary: { p25, median: medianBase, p75, p90 },
+      estimatedEquityRange: "$40,000 - $85,000 / yr (4-yr vest with 1-yr cliff)",
+      estimatedTargetBonus: "12% - 18% annual performance bonus",
+      totalCompMedian: totalComp,
+      geoTiers: {
+        tier1: "$180,000 - $250,000 (SF Bay Area, NYC, High-Cost Remote)",
+        tier2: "$150,000 - $210,000 (Austin, Seattle, Denver, London)",
+        tier3: "$130,000 - $175,000 (Global Remote, Midwest)"
+      },
+      marketRarityMultiplier: 1.25,
+      marketRarityComment: `Candidates proficient in ${skillsList.slice(0, 3).join(", ")} command an estimated 15-25% premium in current hiring cycles.`,
+      negotiationPointers: [
+        `Leverage verified competence in ${skillsList[0] || 'core technologies'} to target 75th percentile base tier ($${p75.toLocaleString()}).`,
+        "Request accelerated refresh grants or signing bonus in lieu of strict base salary caps.",
+        "Highlight full-cycle ownership (architecture through automated CI/CD) to justify Staff-level band."
+      ]
+    });
+  }
+});
+
+// 20. AI Technical Coding Challenge & System Scenario Generator
+app.post("/api/technical-challenge", async (req, res) => {
+  const db = ensureDB();
+  const { candidateId, jobId, difficulty, language } = req.body || {};
+  const cand = db.candidates.find(c => c.id === candidateId);
+  const job = db.jobs.find(j => j.id === jobId);
+
+  const targetRole = job?.title || cand?.predictedRole || "Senior Software Engineer";
+  const targetLang = language === "typescript" ? "typescript" : "python";
+  const targetDiff = difficulty || "Hard";
+
+  const candSkills = cand?.skills || [];
+  const reqSkills = job?.requiredSkills || [];
+  const missing = reqSkills.filter(r => !candSkills.some(c => c.toLowerCase() === r.toLowerCase()));
+
+  const systemPrompt = "You are a Principal Software Engineer crafting an authentic, production-grade technical assessment challenge. Write a real problem with practical constraints, starter code, test cases, and a scoring rubric.";
+  const prompt = `Role: "${targetRole}"\nCandidate Background: ${JSON.stringify(candSkills)}\nTarget Skills / Gaps to Evaluate: ${JSON.stringify(missing.length > 0 ? missing : reqSkills)}\nDifficulty: ${targetDiff}\nProgramming Language: ${targetLang}`;
+
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      title: { type: "STRING" },
+      difficulty: { type: "STRING" },
+      timeLimitMinutes: { type: "INTEGER" },
+      problemStatement: { type: "STRING" },
+      targetedSkillGaps: { type: "ARRAY", items: { type: "STRING" } },
+      realWorldScenario: { type: "STRING" },
+      constraints: { type: "ARRAY", items: { type: "STRING" } },
+      starterCode: {
+        type: "OBJECT",
+        properties: {
+          language: { type: "STRING" },
+          code: { type: "STRING" }
+        },
+        required: ["language", "code"]
+      },
+      testCases: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            input: { type: "STRING" },
+            expectedOutput: { type: "STRING" },
+            explanation: { type: "STRING" }
+          },
+          required: ["input", "expectedOutput", "explanation"]
+        }
+      },
+      rubric: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            category: { type: "STRING" },
+            weight: { type: "STRING" },
+            criteria: { type: "STRING" }
+          },
+          required: ["category", "weight", "criteria"]
+        }
+      }
+    },
+    required: ["title", "difficulty", "timeLimitMinutes", "problemStatement", "targetedSkillGaps", "realWorldScenario", "constraints", "starterCode", "testCases", "rubric"]
+  };
+
+  try {
+    const challenge = await callGeminiJson(prompt, systemPrompt, schema);
+    res.json(challenge);
+  } catch {
+    const isPy = targetLang === "python";
+    res.json({
+      title: `High-Throughput Rate-Limiting Token Bucket for ${targetRole}`,
+      difficulty: targetDiff,
+      timeLimitMinutes: 45,
+      problemStatement: `Design an in-memory, thread-safe Sliding Window or Token Bucket Rate Limiter capable of evaluating 25,000 requests/sec. The limiter must enforce per-client tier quotas and return remaining allowance and retry-after timestamps.`,
+      targetedSkillGaps: missing.length > 0 ? missing : ["Concurrency", "In-Memory Caching", "P99 Latency Control"],
+      realWorldScenario: `Our public API gateway is experiencing downstream database overload from burst traffic. You must build an ultra-low latency middleware interceptor to protect backend microservices.`,
+      constraints: [
+        "O(1) time complexity per rate-check lookup.",
+        "Thread-safe without coarse global mutex locking bottlenecks.",
+        "Space complexity bounded by active client IP addresses within current window."
+      ],
+      starterCode: {
+        language: targetLang,
+        code: isPy
+          ? `from typing import Tuple, Dict\nimport time\n\nclass RateLimiter:\n    def __init__(self, capacity: int, refill_rate_per_sec: float):\n        self.capacity = capacity\n        self.refill_rate = refill_rate_per_sec\n        # Key: client_id, Value: (tokens, last_refill_timestamp)\n        self.buckets: Dict[str, Tuple[float, float]] = {}\n\n    def allow_request(self, client_id: str, tokens_cost: int = 1) -> Tuple[bool, int, float]:\n        \"\"\"\n        Returns (allowed: bool, remaining_tokens: int, retry_after_seconds: float)\n        \"\"\"\n        now = time.time()\n        # TODO: Implement lock-free or fine-grained refill and consumption logic\n        pass`
+          : `interface RateLimitResult {\n  allowed: boolean;\n  remainingTokens: number;\n  retryAfterSec: number;\n}\n\nexport class RateLimiter {\n  private capacity: number;\n  private refillRatePerSec: number;\n  private buckets: Map<string, { tokens: number; lastRefill: number }> = new Map();\n\n  constructor(capacity: number, refillRatePerSec: number) {\n    this.capacity = capacity;\n    this.refillRatePerSec = refillRatePerSec;\n  }\n\n  public allowRequest(clientId: string, cost = 1): RateLimitResult {\n    const now = Date.now() / 1000;\n    // TODO: Implement sliding or token refill mechanics\n    return { allowed: true, remainingTokens: this.capacity, retryAfterSec: 0 };\n  }\n}`
+      },
+      testCases: [
+        {
+          input: 'limiter.allow_request("client_101", 1) within capacity',
+          expectedOutput: "allowed=True, remaining_tokens=9, retry_after=0.0",
+          explanation: "Initial request should succeed immediately with full quota available."
+        },
+        {
+          input: '15 sequential burst requests on a capacity=10 bucket',
+          expectedOutput: "Request 11+ returns allowed=False, retry_after > 0.0",
+          explanation: "Excess calls must be rejected with correct backoff calculation."
+        },
+        {
+          input: 'Wait refill interval (1.0 sec) after exhaustion',
+          expectedOutput: "allowed=True with refreshed tokens",
+          explanation: "Tokens must replenish accurately based on elapsed delta time."
+        }
+      ],
+      rubric: [
+        { category: "Correctness & Edge Handling", weight: "35%", criteria: "Accurate token math, timestamp handling, clock drift tolerance." },
+        { category: "Algorithmic Efficiency", weight: "30%", criteria: "Strict O(1) evaluation speed; zero memory leaks from stale clients." },
+        { category: "Code Architecture & Typing", weight: "20%", criteria: "Clean separation of state, descriptive naming, type safety." },
+        { category: "Communication & Tradeoffs", weight: "15%", criteria: "Explanation of distributed scaling vs local in-memory tradeoffs." }
+      ]
+    });
+  }
+});
+
+// 21. Curated Skill Gap Learning Bridge & High-Value Resources
+app.post("/api/learning-resources", (req, res) => {
+  const { skills } = req.body || {};
+  const requestedSkills: string[] = Array.isArray(skills) && skills.length > 0
+    ? skills
+    : ["Docker", "Kubernetes", "PyTorch", "TypeScript", "AWS"];
+
+  const catalog: Record<string, any[]> = {
+    "Docker": [
+      {
+        skill: "Docker",
+        category: "Hands-on Lab",
+        title: "Docker Multi-Stage Production Builds & Security",
+        url: "https://docs.docker.com/develop/develop-images/multistage-build/",
+        description: "Official guide on minimal image footprint, non-root user execution, and container caching optimization.",
+        estimatedHours: 4,
+        difficulty: "Intermediate"
+      },
+      {
+        skill: "Docker",
+        category: "Open Source Architecture",
+        title: "Awesome Docker: Best Practice Compose & Microservices",
+        url: "https://github.com/veggiemonk/awesome-docker",
+        description: "Curated reference patterns for container networking, volume persistence, and local orchestration.",
+        estimatedHours: 6,
+        difficulty: "Beginner"
+      }
+    ],
+    "Kubernetes": [
+      {
+        skill: "Kubernetes",
+        category: "Documentation",
+        title: "Kubernetes Core Architectural Concepts & Controllers",
+        url: "https://kubernetes.io/docs/concepts/",
+        description: "Deep dive into Pod lifecycle, Deployments, StatefulSets, Services, and Ingress routing.",
+        estimatedHours: 8,
+        difficulty: "Advanced"
+      }
+    ],
+    "PyTorch": [
+      {
+        skill: "PyTorch",
+        category: "Interactive Course",
+        title: "PyTorch Deep Learning & Distributed Training Zero-to-Hero",
+        url: "https://pytorch.org/tutorials/",
+        description: "Comprehensive step-by-step implementation of tensors, autograd, CUDA acceleration, and TorchScript.",
+        estimatedHours: 12,
+        difficulty: "Intermediate"
+      }
+    ],
+    "React": [
+      {
+        skill: "React",
+        category: "Documentation",
+        title: "React 19 Server Components, Actions & Optimistic Hooks",
+        url: "https://react.dev/reference/react",
+        description: "Modern component architecture, Suspense boundaries, and non-blocking state updates.",
+        estimatedHours: 5,
+        difficulty: "Intermediate"
+      }
+    ],
+    "TypeScript": [
+      {
+        skill: "TypeScript",
+        category: "Interactive Course",
+        title: "TypeScript Professional Handbook & Type Gymnastics",
+        url: "https://www.typescriptlang.org/docs/handbook/intro.html",
+        description: "Generics, conditional types, template literal types, and strict compiler configurations.",
+        estimatedHours: 6,
+        difficulty: "Intermediate"
+      }
+    ],
+    "AWS": [
+      {
+        skill: "AWS",
+        category: "Documentation",
+        title: "AWS Well-Architected Framework: Reliability & Security Pillars",
+        url: "https://aws.amazon.com/architecture/well-architected/",
+        description: "Multi-AZ failover, IAM least privilege principles, and serverless distributed designs.",
+        estimatedHours: 8,
+        difficulty: "Advanced"
+      }
+    ],
+    "Python": [
+      {
+        skill: "Python",
+        category: "Hands-on Lab",
+        title: "FastAPI High-Performance Async Microservices",
+        url: "https://fastapi.tiangolo.com/tutorial/",
+        description: "Pydantic V2 validation, async/await concurrency, OpenAPI documentation, and dependency injection.",
+        estimatedHours: 5,
+        difficulty: "Intermediate"
+      }
+    ],
+    "FastAPI": [
+      {
+        skill: "FastAPI",
+        category: "Hands-on Lab",
+        title: "Async REST APIs with Pydantic & Dependency Injection",
+        url: "https://fastapi.tiangolo.com/",
+        description: "High concurrency Python API design, JWT auth, and background worker task queues.",
+        estimatedHours: 4,
+        difficulty: "Intermediate"
+      }
+    ]
+  };
+
+  const results: any[] = [];
+  for (const s of requestedSkills) {
+    const match = Object.keys(catalog).find(k => k.toLowerCase() === s.toLowerCase());
+    if (match) {
+      results.push(...catalog[match]);
+    } else {
+      results.push({
+        skill: s,
+        category: "Documentation",
+        title: `${s} Official Documentation & Developer Guide`,
+        url: `https://devdocs.io/#q=${encodeURIComponent(s)}`,
+        description: `Authoritative API reference, quickstart tutorials, and idiomatic best practices for ${s}.`,
+        estimatedHours: 4,
+        difficulty: "Intermediate"
+      });
+    }
+  }
+
+  res.json({
+    totalResources: results.length,
+    resources: results
+  });
 });
 
 // Configure Vite or Static Web Server assets middleware

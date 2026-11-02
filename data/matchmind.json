@@ -15,7 +15,8 @@
       "experienceSummary": "2 core competencies detected. Solid technical candidate with strong alignment for modern software roles.",
       "education": "Degree in Computer Science or technical background",
       "isShortlisted": false,
-      "createdAt": "2026-07-29T09:24:16.796Z"
+      "createdAt": "2026-07-29T09:24:16.796Z",
+      "pipelineStage": "screened"
     },
     {
       "id": "cand-1",
@@ -58,7 +59,8 @@
       "experienceSummary": "4+ years experience engineering AI pipelines and microservices.",
       "education": "M.S. in Computer Science - Stanford University",
       "isShortlisted": true,
-      "createdAt": "2026-07-29T09:24:07.325Z"
+      "createdAt": "2026-07-29T09:24:07.325Z",
+      "pipelineStage": "offer"
     },
     {
       "id": "cand-2",
@@ -102,7 +104,8 @@
       "experienceSummary": "3+ years designing accessible, high-speed single page applications.",
       "education": "B.S. in Computer Information Systems - Georgia Tech",
       "isShortlisted": false,
-      "createdAt": "2026-07-29T09:24:07.325Z"
+      "createdAt": "2026-07-29T09:24:07.325Z",
+      "pipelineStage": "interview"
     }
   ],
   "jobs": [

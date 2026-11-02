@@ -1,3 +1,5 @@
+export type PipelineStage = "sourced" | "screened" | "interview" | "team_match" | "offer" | "hired";
+
 export interface Candidate {
   id: string;
   name: string;
@@ -18,6 +20,7 @@ export interface Candidate {
   education?: string;
   isShortlisted?: boolean;
   createdAt: string;
+  pipelineStage?: PipelineStage;
   radarMetrics?: {
     hardSkills: number;
     experienceDepth: number;
@@ -92,6 +95,7 @@ export interface BatchScreeningResult {
     recommendation: "Strong Hire" | "Consider" | "Needs Development" | "Not Aligned";
     keyHighlights: string;
     isShortlisted: boolean;
+    pipelineStage?: PipelineStage;
   }[];
   totalScreened: number;
   averageScore: number;
@@ -109,4 +113,60 @@ export interface JobOptimizationResult {
   missingCrucialSkills: string[];
   enhancedDescription: string;
   keySellingPoints: string[];
+}
+
+export interface SalaryBenchmarkResult {
+  roleTitle: string;
+  experienceLevel: string;
+  baseSalary: {
+    p25: number;
+    median: number;
+    p75: number;
+    p90: number;
+  };
+  estimatedEquityRange: string;
+  estimatedTargetBonus: string;
+  totalCompMedian: number;
+  geoTiers: {
+    tier1: string; // SF / NYC / Remote US (High)
+    tier2: string; // Austin / Seattle / Chicago / London
+    tier3: string; // Global Remote / Low Cost
+  };
+  marketRarityMultiplier: number;
+  marketRarityComment: string;
+  negotiationPointers: string[];
+}
+
+export interface TechnicalChallengeResult {
+  title: string;
+  difficulty: "Medium" | "Hard" | "Staff / Expert";
+  timeLimitMinutes: number;
+  problemStatement: string;
+  targetedSkillGaps: string[];
+  realWorldScenario: string;
+  constraints: string[];
+  starterCode: {
+    language: "python" | "typescript";
+    code: string;
+  };
+  testCases: {
+    input: string;
+    expectedOutput: string;
+    explanation: string;
+  }[];
+  rubric: {
+    category: string;
+    weight: string;
+    criteria: string;
+  }[];
+}
+
+export interface LearningResource {
+  skill: string;
+  category: "Documentation" | "Interactive Course" | "Open Source Architecture" | "Hands-on Lab";
+  title: string;
+  url: string;
+  description: string;
+  estimatedHours: number;
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
 }

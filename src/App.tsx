@@ -34,9 +34,14 @@ import {
   RotateCcw,
   ExternalLink,
   Filter,
-  Download
+  Download,
+  DollarSign,
+  Code2,
+  Layers,
+  Upload,
+  Coins
 } from "lucide-react";
-import { Candidate, JobDescription, MatchReport } from "./types";
+import { Candidate, JobDescription, MatchReport, PipelineStage } from "./types";
 import { 
   InteractiveVenn, 
   TalentQuadrantMatrix, 
@@ -48,6 +53,9 @@ import { InterviewStudio } from "./components/InterviewStudio";
 import { BatchScreener } from "./components/BatchScreener";
 import { JobOptimizer } from "./components/JobOptimizer";
 import { TalentDossierModal } from "./components/TalentDossierModal";
+import { TalentPipelineKanban } from "./components/TalentPipelineKanban";
+import { CompensationCalculator } from "./components/CompensationCalculator";
+import { TechnicalAssessmentStudio } from "./components/TechnicalAssessmentStudio";
 
 export default function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -59,12 +67,11 @@ export default function App() {
   
   // Navigation & UI state
   const [activeTab, setActiveTab] = useState<
-    "home" | "matches" | "interview" | "batch" | "battle" | "enhancer" | "optimizer" | "trends" | "talent" | "jobs"
+    "home" | "pipeline" | "matches" | "interview" | "challenges" | "compensation" | "batch" | "battle" | "enhancer" | "optimizer" | "trends" | "talent" | "jobs"
   >("home");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [semanticSearchActive, setSemanticSearchActive] = useState(false);
-  const [selectedJobFilter, setSelectedJobFilter] = useState<string>("all");
   
   // Advanced Features State
   const [compareCand1Id, setCompareCand1Id] = useState<string>("");
@@ -83,14 +90,6 @@ export default function App() {
 
   // Dossier Modal State
   const [showDossierModal, setShowDossierModal] = useState<boolean>(false);
-  
-  // Home Sandbox Simulator State
-  const [sandboxCandidateSkills, setSandboxCandidateSkills] = useState<string[]>([
-    "Python", "PyTorch", "Docker", "SQL", "Git", "FastAPI", "Machine Learning"
-  ]);
-  const [sandboxJobSkills, setSandboxJobSkills] = useState<string[]>([
-    "Python", "PyTorch", "FastAPI", "SQL", "Docker", "NLP", "Transformers"
-  ]);
   
   // Loading states
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -203,7 +202,7 @@ export default function App() {
       });
       if (res.ok) {
         const updated = await res.json();
-        setCandidates(prev => prev.map(c => c.id === id ? updated : c));
+        setCandidates(prev => prev.map(c => c.id === id ? { ...c, isShortlisted: updated.isShortlisted } : c));
         showNotification(
           `${updated.name} has been ${updated.isShortlisted ? "shortlisted" : "removed from shortlist"}.`, 
           "success"
@@ -211,6 +210,26 @@ export default function App() {
       }
     } catch (err) {
       showNotification("Error updating shortlist flag.", "error");
+    }
+  };
+
+  const handleUpdateStage = async (id: string, newStage: PipelineStage) => {
+    try {
+      const res = await fetch(`/api/candidates/${id}/stage`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: newStage }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setCandidates(prev => prev.map(c => c.id === id ? { ...c, pipelineStage: newStage } : c));
+        showNotification(
+          `Moved ${updated.name} to ${newStage.replace('_', ' ').toUpperCase()} stage.`, 
+          "info"
+        );
+      }
+    } catch (err) {
+      showNotification("Failed updating candidate stage.", "error");
     }
   };
 
@@ -282,6 +301,19 @@ export default function App() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleFileUpload = (file: File) => {
+    setResumeFilename(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (text) {
+        setResumeText(text);
+        showNotification(`Loaded ${file.name} (${text.length} characters)`, "info");
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handlePostJob = async (e: React.FormEvent) => {
@@ -484,7 +516,7 @@ export default function App() {
                 <h1 className="text-base font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5">
                   MatchMind <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">AI Talent OS</span>
                 </h1>
-                <p className="text-[11px] text-slate-500">Autonomous Resume Screening & Talent Intelligence</p>
+                <p className="text-[11px] text-slate-500">Autonomous Resume Screening, Voice Interview & Comp Intelligence</p>
               </div>
             </div>
 
@@ -521,9 +553,12 @@ export default function App() {
           <div className="flex items-center space-x-1 overflow-x-auto py-2 border-t border-slate-100 text-xs font-semibold no-scrollbar">
             {[
               { id: "home", label: "Dashboard & Search", icon: BarChart3 },
+              { id: "pipeline", label: "ATS Pipeline", icon: Layers, badge: "Kanban" },
               { id: "matches", label: "Diagnostic Studio", icon: Cpu },
-              { id: "interview", label: "AI Mock Interview", icon: Bot, badge: "New" },
-              { id: "batch", label: "Batch Screener", icon: Trophy, badge: "Leaderboard" },
+              { id: "interview", label: "Voice Mock Interview", icon: Bot, badge: "Voice AI" },
+              { id: "challenges", label: "Code Challenges", icon: Code2, badge: "New" },
+              { id: "compensation", label: "Salary & Comp AI", icon: Coins, badge: "Market" },
+              { id: "batch", label: "Batch Screener", icon: Trophy },
               { id: "battle", label: "Candidate Battle", icon: Swords },
               { id: "enhancer", label: "Resume Enhancer", icon: Wand2 },
               { id: "optimizer", label: "Job Post Optimizer", icon: ShieldCheck },
@@ -542,7 +577,7 @@ export default function App() {
                   }}
                   className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all flex items-center gap-1.5 ${
                     isActive 
-                      ? 'bg-indigo-600 text-white shadow-xs' 
+                      ? 'bg-indigo-600 text-white shadow-xs font-bold' 
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
@@ -631,13 +666,13 @@ export default function App() {
 
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Shortlisted</span>
-                  <Award className="w-4 h-4 text-amber-500" />
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Offers & Hires</span>
+                  <Award className="w-4 h-4 text-emerald-500" />
                 </div>
                 <div className="text-2xl font-black text-slate-900 mt-1">
-                  {candidates.filter(c => c.isShortlisted).length}
+                  {candidates.filter(c => c.pipelineStage === "offer" || c.pipelineStage === "hired").length}
                 </div>
-                <p className="text-[11px] text-slate-500 mt-0.5">High-priority recruitments</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Advanced pipeline candidates</p>
               </div>
 
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
@@ -670,9 +705,23 @@ export default function App() {
               {/* Quick Feature Launchpad */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
                 <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
-                  AI Talent Workflows
+                  AI Talent Modules
                 </h3>
                 <div className="space-y-2">
+                  <button
+                    onClick={() => setActiveTab("pipeline")}
+                    className="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-300 transition-all flex items-center justify-between group"
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                        <Layers className="w-4 h-4 text-indigo-600" />
+                        ATS Recruitment Pipeline
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Kanban lifecycle tracking</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                  </button>
+
                   <button
                     onClick={() => setActiveTab("interview")}
                     className="w-full text-left p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 hover:border-indigo-300 transition-all flex items-center justify-between group"
@@ -680,39 +729,39 @@ export default function App() {
                     <div>
                       <div className="font-bold text-xs text-indigo-950 flex items-center gap-1.5">
                         <Bot className="w-4 h-4 text-indigo-600" />
-                        AI Mock Interview Studio
+                        AI Voice Mock Interview
                       </div>
-                      <p className="text-[11px] text-slate-600 mt-0.5">Simulate 4-round technical screening</p>
+                      <p className="text-[11px] text-slate-600 mt-0.5">Speech synthesis & mic answers</p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-indigo-400 group-hover:translate-x-1 transition-transform" />
                   </button>
 
                   <button
-                    onClick={() => setActiveTab("batch")}
-                    className="w-full text-left p-3 rounded-xl bg-purple-50/70 border border-purple-100 hover:border-purple-300 transition-all flex items-center justify-between group"
+                    onClick={() => setActiveTab("challenges")}
+                    className="w-full text-left p-3 rounded-xl bg-violet-50/70 border border-violet-100 hover:border-violet-300 transition-all flex items-center justify-between group"
                   >
                     <div>
-                      <div className="font-bold text-xs text-purple-950 flex items-center gap-1.5">
-                        <Trophy className="w-4 h-4 text-purple-600" />
-                        Bulk Screening Leaderboard
+                      <div className="font-bold text-xs text-violet-950 flex items-center gap-1.5">
+                        <Code2 className="w-4 h-4 text-violet-600" />
+                        Code Challenge Studio
                       </div>
-                      <p className="text-[11px] text-slate-600 mt-0.5">Rank entire pool against vacancies</p>
+                      <p className="text-[11px] text-slate-600 mt-0.5">Tailored gap assessments & rubrics</p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-4 h-4 text-violet-400 group-hover:translate-x-1 transition-transform" />
                   </button>
 
                   <button
-                    onClick={() => setActiveTab("optimizer")}
-                    className="w-full text-left p-3 rounded-xl bg-teal-50/70 border border-teal-100 hover:border-teal-300 transition-all flex items-center justify-between group"
+                    onClick={() => setActiveTab("compensation")}
+                    className="w-full text-left p-3 rounded-xl bg-emerald-50/70 border border-emerald-100 hover:border-emerald-300 transition-all flex items-center justify-between group"
                   >
                     <div>
-                      <div className="font-bold text-xs text-teal-950 flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-teal-600" />
-                        Job Description Optimizer
+                      <div className="font-bold text-xs text-emerald-950 flex items-center gap-1.5">
+                        <Coins className="w-4 h-4 text-emerald-600" />
+                        Salary & Comp Benchmarking
                       </div>
-                      <p className="text-[11px] text-slate-600 mt-0.5">Audit bias, clarity & modern skills</p>
+                      <p className="text-[11px] text-slate-600 mt-0.5">Percentiles, equity & geo tiers</p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-teal-400 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
               </div>
@@ -721,7 +770,30 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 2. MATCH DIAGNOSTIC STUDIO & RADAR */}
+        {/* 2. ATS PIPELINE KANBAN BOARD */}
+        {/* ========================================================= */}
+        {activeTab === "pipeline" && (
+          <TalentPipelineKanban
+            candidates={candidates}
+            onUpdateStage={handleUpdateStage}
+            onToggleShortlist={handleShortlistToggle}
+            onSelectCandidate={(id) => {
+              setSelectedCandidateId(id);
+              setActiveTab("matches");
+            }}
+            onLaunchInterview={(id) => {
+              setSelectedCandidateId(id);
+              setActiveTab("interview");
+            }}
+            onOpenDossier={(id) => {
+              setSelectedCandidateId(id);
+              setShowDossierModal(true);
+            }}
+          />
+        )}
+
+        {/* ========================================================= */}
+        {/* 3. MATCH DIAGNOSTIC STUDIO & RADAR */}
         {/* ========================================================= */}
         {activeTab === "matches" && (
           <div className="space-y-6">
@@ -862,7 +934,7 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 3. AI MOCK INTERVIEW STUDIO */}
+        {/* 4. AI MOCK INTERVIEW STUDIO */}
         {/* ========================================================= */}
         {activeTab === "interview" && (
           <InterviewStudio
@@ -876,7 +948,35 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 4. BATCH SCREENER & LEADERBOARD */}
+        {/* 5. CODE CHALLENGE STUDIO */}
+        {/* ========================================================= */}
+        {activeTab === "challenges" && (
+          <TechnicalAssessmentStudio
+            candidates={candidates}
+            jobs={jobs}
+            selectedCandidateId={selectedCandidateId}
+            selectedJobId={selectedJobId}
+            onSelectCandidate={(id) => setSelectedCandidateId(id)}
+            onSelectJob={(id) => setSelectedJobId(id)}
+          />
+        )}
+
+        {/* ========================================================= */}
+        {/* 6. COMPENSATION & SALARY BENCHMARK */}
+        {/* ========================================================= */}
+        {activeTab === "compensation" && (
+          <CompensationCalculator
+            candidates={candidates}
+            jobs={jobs}
+            selectedCandidateId={selectedCandidateId}
+            selectedJobId={selectedJobId}
+            onSelectCandidate={(id) => setSelectedCandidateId(id)}
+            onSelectJob={(id) => setSelectedJobId(id)}
+          />
+        )}
+
+        {/* ========================================================= */}
+        {/* 7. BATCH SCREENER & LEADERBOARD */}
         {/* ========================================================= */}
         {activeTab === "batch" && (
           <BatchScreener
@@ -891,7 +991,7 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 5. CANDIDATE BATTLE MATRIX */}
+        {/* 8. CANDIDATE BATTLE MATRIX */}
         {/* ========================================================= */}
         {activeTab === "battle" && (
           <div className="space-y-6">
@@ -1029,7 +1129,7 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 6. AI RESUME ENHANCER & REWRITER */}
+        {/* 9. AI RESUME ENHANCER & REWRITER */}
         {/* ========================================================= */}
         {activeTab === "enhancer" && (
           <div className="space-y-6">
@@ -1122,7 +1222,7 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 7. AI JOB DESCRIPTION OPTIMIZER */}
+        {/* 10. AI JOB DESCRIPTION OPTIMIZER */}
         {/* ========================================================= */}
         {activeTab === "optimizer" && (
           <JobOptimizer
@@ -1132,7 +1232,7 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 8. MARKET SKILLS TRENDS & ANALYTICS */}
+        {/* 11. MARKET SKILLS TRENDS & ANALYTICS */}
         {/* ========================================================= */}
         {activeTab === "trends" && (
           <div className="space-y-6">
@@ -1205,7 +1305,7 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 9. TALENT POOL DIRECTORY */}
+        {/* 12. TALENT POOL DIRECTORY */}
         {/* ========================================================= */}
         {activeTab === "talent" && (
           <div className="space-y-4">
@@ -1273,7 +1373,7 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* 10. JOB OPENINGS DIRECTORY */}
+        {/* 13. JOB OPENINGS DIRECTORY */}
         {/* ========================================================= */}
         {activeTab === "jobs" && (
           <div className="space-y-4">
@@ -1330,16 +1430,87 @@ export default function App() {
         )}
       </main>
 
-      {/* Parse Resume Modal */}
+      {/* Parse Resume Modal with Drag-and-Drop & Presets */}
       {showAddResume && (
         <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-indigo-600" />
-                Parse Candidate Resume Text
+                Ingest & Parse Candidate Resume
               </h3>
               <button onClick={() => setShowAddResume(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+
+            {/* Quick Demo Pre-fill Presets */}
+            <div className="p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 text-xs">
+              <span className="font-bold text-indigo-900 block mb-1.5 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                Quick-Load Candidate Profiles:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResumeFilename("Maya_Patel_AI_Architect.pdf");
+                    setResumeText("Maya Patel\nPrincipal AI & ML Systems Architect\nEmail: maya.patel@deeptech.io | Phone: +1 (555) 302-8819\nEducation: M.S. in Computer Science - Carnegie Mellon University\nSummary: 7+ years architecting scalable neural search pipelines, fine-tuning large language models on distributed GPU clusters, and productionizing FastAPI inference servers. Core skills: Python, PyTorch, JAX, CUDA, Docker, Kubernetes, Transformers, NLP, Distributed Systems, Git, SQL.");
+                  }}
+                  className="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-800 rounded-lg border border-indigo-200 text-[11px] font-semibold transition-all shadow-2xs"
+                >
+                  + Maya Patel (AI Systems Architect)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResumeFilename("Lucas_Vance_Cloud_K8s.pdf");
+                    setResumeText("Lucas Vance\nSenior Cloud Platform & DevOps Engineer\nEmail: lucas.vance@cloudeng.com | Phone: +1 (555) 744-2201\nEducation: B.S. in Software Engineering - University of Washington\nSummary: 5+ years building immutable multi-cloud infrastructure with Terraform, orchestrating Kubernetes pods, managing AWS VPC networking, and enforcing CI/CD gitops. Core skills: Kubernetes, Docker, AWS, Terraform, CI/CD, Linux, Go, Python, Cloud Architecture, Prometheus, IAM.");
+                  }}
+                  className="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-800 rounded-lg border border-indigo-200 text-[11px] font-semibold transition-all shadow-2xs"
+                >
+                  + Lucas Vance (DevOps & K8s)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResumeFilename("Sophia_Lin_FullStack.txt");
+                    setResumeText("Sophia Lin\nSenior Full Stack & Design Systems Engineer\nEmail: sophia.lin@frontendlab.dev | Phone: +1 (555) 918-3344\nEducation: B.S. in Computer Science - UCLA\nSummary: 4+ years engineering high-traffic web applications with React 19, TypeScript, Next.js, Tailwind CSS, and Node.js. Passionate about accessibility, sub-100ms API responses, and clean component architecture. Core skills: React, TypeScript, Next.js, Node.js, Express, Tailwind CSS, REST API, GraphQL, Jest, Git.");
+                  }}
+                  className="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-800 rounded-lg border border-indigo-200 text-[11px] font-semibold transition-all shadow-2xs"
+                >
+                  + Sophia Lin (Full Stack Lead)
+                </button>
+              </div>
+            </div>
+
+            {/* Drag & Drop File Zone */}
+            <div 
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                  handleFileUpload(e.dataTransfer.files[0]);
+                }
+              }}
+              className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-4 text-center cursor-pointer transition-colors bg-slate-50/50"
+              onClick={() => {
+                const el = document.getElementById("file-upload-input");
+                if (el) el.click();
+              }}
+            >
+              <input
+                id="file-upload-input"
+                type="file"
+                accept=".txt,.pdf,.json,.md,.doc"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleFileUpload(e.target.files[0]);
+                  }
+                }}
+              />
+              <Upload className="w-5 h-5 text-indigo-600 mx-auto mb-1.5" />
+              <span className="text-xs font-bold text-slate-800 block">Drop resume file here or click to browse</span>
+              <span className="text-[10px] text-slate-400">Supports .txt, .pdf, .json, .md text documents</span>
             </div>
 
             <form onSubmit={handleAnalyzeResume} className="space-y-3 text-xs">
@@ -1357,7 +1528,7 @@ export default function App() {
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Resume Content Text</label>
                 <textarea
-                  rows={8}
+                  rows={7}
                   value={resumeText}
                   onChange={(e) => setResumeText(e.target.value)}
                   placeholder="Paste candidate resume text with contact details, work history, and technical competencies..."
@@ -1379,7 +1550,7 @@ export default function App() {
                   disabled={isAnalyzing || !resumeText.trim()}
                   className="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-sm"
                 >
-                  {isAnalyzing ? "Extracting..." : "Parse & Add"}
+                  {isAnalyzing ? "Extracting..." : "Parse & Add Profile"}
                 </button>
               </div>
             </form>
