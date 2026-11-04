@@ -170,3 +170,77 @@ export interface LearningResource {
   estimatedHours: number;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
 }
+
+export interface OutreachTouchpoint {
+  id: string;
+  channel: "Email" | "LinkedIn" | "Follow-up" | "Executive";
+  timing: string;
+  subject: string;
+  body: string;
+  personalizedHook: string;
+  callToAction: string;
+}
+
+export interface OutreachSequence {
+  candidateId: string;
+  candidateName: string;
+  candidateEmail: string;
+  jobTitle: string;
+  tone: "Founder-to-Founder" | "Engineering Leader" | "Executive" | "Growth & Culture";
+  keyStrengthsReferenced: string[];
+  touchpoints: OutreachTouchpoint[];
+}
+
+export interface SquadMemberAssignment {
+  candidateId: string;
+  name: string;
+  assignedRole: string;
+  primaryDomain: string;
+  keyResponsibilities: string[];
+  keySkillsProvided: string[];
+}
+
+export interface EngineeringSquadPlan {
+  objective: string;
+  squadName: string;
+  synergyScore: number;
+  summary: string;
+  members: SquadMemberAssignment[];
+  competencyCoverage: {
+    frontend: number;
+    backend: number;
+    cloudDevOps: number;
+    aiMachineLearning: number;
+    systemDesign: number;
+    teamVelocity: number;
+  };
+  complementarySynergies: string[];
+  potentialRisksAndMitigations: { risk: string; mitigation: string }[];
+}
+
+export interface CodeReviewReport {
+  timeComplexity: string;
+  spaceComplexity: string;
+  bigOScore: number;
+  codeQualityScore: number;
+  strengths: string[];
+  edgeCaseVulnerabilities: string[];
+  suggestedImprovements: string[];
+  refactoredSnippet: string;
+}
+
+export interface ReferenceCheckReport {
+  candidateId: string;
+  candidateName: string;
+  targetRole: string;
+  verifiableClaims: {
+    claim: string;
+    context: string;
+    probeQuestion: string;
+    greenFlags: string;
+    redFlags: string;
+  }[];
+  managerQuestions: string[];
+  peerQuestions: string[];
+}
+

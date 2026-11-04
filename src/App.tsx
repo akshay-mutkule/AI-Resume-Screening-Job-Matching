@@ -56,6 +56,8 @@ import { TalentDossierModal } from "./components/TalentDossierModal";
 import { TalentPipelineKanban } from "./components/TalentPipelineKanban";
 import { CompensationCalculator } from "./components/CompensationCalculator";
 import { TechnicalAssessmentStudio } from "./components/TechnicalAssessmentStudio";
+import { OutreachStudio } from "./components/OutreachStudio";
+import { SquadBuilder } from "./components/SquadBuilder";
 
 export default function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -67,8 +69,9 @@ export default function App() {
   
   // Navigation & UI state
   const [activeTab, setActiveTab] = useState<
-    "home" | "pipeline" | "matches" | "interview" | "challenges" | "compensation" | "batch" | "battle" | "enhancer" | "optimizer" | "trends" | "talent" | "jobs"
+    "home" | "pipeline" | "matches" | "interview" | "challenges" | "compensation" | "outreach" | "squad" | "batch" | "battle" | "enhancer" | "optimizer" | "trends" | "talent" | "jobs"
   >("home");
+
 
   const [searchTerm, setSearchTerm] = useState("");
   const [semanticSearchActive, setSemanticSearchActive] = useState(false);
@@ -556,8 +559,10 @@ export default function App() {
               { id: "pipeline", label: "ATS Pipeline", icon: Layers, badge: "Kanban" },
               { id: "matches", label: "Diagnostic Studio", icon: Cpu },
               { id: "interview", label: "Voice Mock Interview", icon: Bot, badge: "Voice AI" },
-              { id: "challenges", label: "Code Challenges", icon: Code2, badge: "New" },
+              { id: "challenges", label: "Code Sandbox & Big-O", icon: Code2, badge: "Live" },
               { id: "compensation", label: "Salary & Comp AI", icon: Coins, badge: "Market" },
+              { id: "outreach", label: "Outreach Sequencer", icon: Send, badge: "80%+ Reply" },
+              { id: "squad", label: "Engineering Squad", icon: Users, badge: "SWAT Pod" },
               { id: "batch", label: "Batch Screener", icon: Trophy },
               { id: "battle", label: "Candidate Battle", icon: Swords },
               { id: "enhancer", label: "Resume Enhancer", icon: Wand2 },
@@ -566,6 +571,7 @@ export default function App() {
               { id: "talent", label: `Talent Pool (${candidates.length})`, icon: Users },
               { id: "jobs", label: `Job Openings (${jobs.length})`, icon: Briefcase }
             ].map(tab => {
+
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
@@ -763,10 +769,39 @@ export default function App() {
                     </div>
                     <ChevronRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab("outreach")}
+                    className="w-full text-left p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 hover:border-indigo-300 transition-all flex items-center justify-between group"
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-indigo-950 flex items-center gap-1.5">
+                        <Send className="w-4 h-4 text-indigo-600" />
+                        Personalized Outreach Sequencer
+                      </div>
+                      <p className="text-[11px] text-slate-600 mt-0.5">80%+ reply cold outreach & mailto</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-indigo-400 group-hover:translate-x-1 transition-transform" />
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("squad")}
+                    className="w-full text-left p-3 rounded-xl bg-teal-50/70 border border-teal-100 hover:border-teal-300 transition-all flex items-center justify-between group"
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-teal-950 flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-teal-600" />
+                        Engineering SWAT Pod Builder
+                      </div>
+                      <p className="text-[11px] text-slate-600 mt-0.5">Multi-hire synergy & radar coverage</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-teal-400 group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </div>
               </div>
             </div>
           </div>
+
         )}
 
         {/* ========================================================= */}
@@ -976,8 +1011,37 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
+        {/* 6B. AI PERSONALIZED OUTREACH SEQUENCER */}
+        {/* ========================================================= */}
+        {activeTab === "outreach" && (
+          <OutreachStudio
+            candidates={candidates}
+            jobs={jobs}
+            selectedCandidateId={selectedCandidateId}
+            selectedJobId={selectedJobId}
+            onSelectCandidate={(id) => setSelectedCandidateId(id)}
+            onSelectJob={(id) => setSelectedJobId(id)}
+          />
+        )}
+
+        {/* ========================================================= */}
+        {/* 6C. ENGINEERING SQUAD & SWAT POD BUILDER */}
+        {/* ========================================================= */}
+        {activeTab === "squad" && (
+          <SquadBuilder
+            candidates={candidates}
+            onSelectCandidate={(id) => {
+              setSelectedCandidateId(id);
+              setActiveTab("matches");
+            }}
+            onAdvanceCandidateStage={handleUpdateStage}
+          />
+        )}
+
+        {/* ========================================================= */}
         {/* 7. BATCH SCREENER & LEADERBOARD */}
         {/* ========================================================= */}
+
         {activeTab === "batch" && (
           <BatchScreener
             candidates={candidates}
